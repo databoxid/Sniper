@@ -1,0 +1,336 @@
+import { useState, useEffect, useRef, useCallback } from "react";
+
+const MODEL = "claude-sonnet-4-6";
+
+async function callClaude(prompt, useSearch = false) {
+  const body = {
+    model: MODEL,
+    max_tokens: 1200,
+    messages: [{ role: "user", content: prompt }],
+  };
+  if (useSearch) body.tools = [{ type: "web_search_20250305", name: "web_search" }];
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.error?.message || "HTTP " + res.status);
+  }
+  const data = await res.json();
+  return data.content.filter(b => b.type === "text").map(b => b.text).join("").trim();
+}
+
+function parseJSON(text) {
+  const m = text.replace(/```json|```/g, "").match(/\{[\s\S]*\}/);
+  if (!m) throw new Error("No JSON in response");
+  return JSON.parse(m[0]);
+}
+
+function getSession() {
+  const h = new Date().getUTCHours();
+  if (h >= 22 || h < 7) return "ASIA";
+  if (h >= 7 && h < 12) return "LONDON";
+  if (h >= 12 && h < 17) return "NEW YORK";
+  return "OVERLAP";
+}
+
+function pts(val, base) {
+  const d = parseFloat(val) - parseFloat(base);
+  return " (" + (d >= 0 ? "+" : "") + d.toFixed(1) + ")";
+}
+
+function iColor(s = "") {
+  if (["OVERSOLD","GOLDEN","BULLISH","STRONG","BULLISH_DIV","BUY","UPTREND"].some(x => s.includes(x))) return "#22c55e";
+  if (["OVERBOUGHT","DEATH","BEARISH","WEAK","SELL","DOWNTREND"].some(x => s.includes(x))) return "#ef4444";
+  return "#facc15";
+}
+function iPct(s = "") {
+  if (["OVERSOLD","GOLDEN","BULLISH","STRONG","BULLISH_DIV","BUY","UPTREND"].some(x => s.includes(x))) return 80;
+  if (["OVERBOUGHT","DEATH","BEARISH","WEAK","SELL","DOWNTREND"].some(x => s.includes(x))) return 20;
+  return 50;
+}
+
+const C = {
+  bg: "#080d17", card: "#0f172a", border: "#1e293b",
+  sm: "#1e293b", text: "#f1f5f9", dim: "#64748b",
+  gold: "#facc15", green: "#22c55e", red: "#ef4444",
+  purple: "#a78bfa", blue: "#60a5fa",
+};
+
+function Card({ children, style }) {
+  return <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 16, marginBottom: 12, ...style }}>{children}</div>;
+}
+function Sm({ children, style }) {
+  return <div style={{ background: C.sm, borderRadius: 12, padding: "10px 14px", ...style }}>{children}</div>;
+}
+function Bar({ pct, color }) {
+  return (
+    <div style={{ height: 5, borderRadius: 3, background: "#1a2535", overflow: "hidden", marginTop: 4 }}>
+      <div style={{ height: "100%", width: `${Math.min(100, Math.max(0, pct))}%`, background: color, borderRadius: 3, transition: "width .8s" }} />
+    </div>
+  );
+}
+function Row({ label, value, color }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: `1px solid ${C.border}` }}>
+      <span style={{ color: "#94a3b8", fontSize: 13 }}>{label}</span>
+      <span style={{ color: color || C.text, fontSize: 13, fontWeight: 700, fontFamily: "monospace" }}>{value}</span>
+    </div>
+  );
+}
+
+export default function SniperPro() {
+  const [mode, setModeState] = useState("scalp");
+  const [phase, setPhase] = useState("idle"); // idle | price | analysis | done | error
+  const [priceData, setPriceData] = useState(null);
+  const [analisa, setAnalisa] = useState(null);
+  const [errMsg, setErrMsg] = useState("");
+  const [flashDir, setFlashDir] = useState(null);
+  const prevPriceRef = useRef(null);
+  const busyRef = useRef(false);
+  const timerRef = useRef(null);
+  const modeRef = useRef("scalp");
+
+  const run = useCallback(async () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    clearInterval(timerRef.current);
+    setPhase("price");
+    setErrMsg("");
+
+    try {
+      // Step 1: get live price
+      const t1 = await callClaude(
+        `UTC: ${new Date().toUTCString()}. Search for current live XAUUSD Gold Spot price now.
+Reply ONLY JSON no markdown: {"price":NUM,"high":NUM,"low":NUM,"open":NUM,"source":"str"}`,
+        true
+      );
+      const pd = parseJSON(t1);
+      if (!pd.price || pd.price < 500) throw new Error("Harga tidak valid");
+
+      // flash
+      if (prevPriceRef.current !== null) {
+        setFlashDir(pd.price > prevPriceRef.current ? "up" : "down");
+        setTimeout(() => setFlashDir(null), 600);
+      }
+      prevPriceRef.current = pd.price;
+      setPriceData(pd);
+
+      // Step 2: analysis
+      setPhase("analysis");
+      const p = pd.price, high = pd.high || p*1.005, low = pd.low || p*0.995, open = pd.open || p;
+      const tf = modeRef.current === "scalp" ? "M5 SCALPING" : "H1 SWING";
+
+      const t2 = await callClaude(
+        `Kamu analis XAUUSD profesional kelas dunia (ICT, SMC, Price Action, Fibonacci).
+
+DATA LIVE:
+- Harga : ${p.toFixed(2)}
+- Open  : ${open.toFixed(2)}
+- High  : ${high.toFixed(2)}
+- Low   : ${low.toFixed(2)}
+- Range : ${(high-low).toFixed(2)} pts | Change: ${(p-open>=0?"+":"")}${(p-open).toFixed(2)} (${((p-open)/open*100).toFixed(2)}%)
+- Mode  : ${tf}
+- Sesi  : ${getSession()}
+
+Jawab HANYA JSON murni:
+{"signal":"BUY/SELL/WAIT","confidence":0-100,"bias":"BULLISH/BEARISH/NEUTRAL","entry":NUM,"sl":NUM,"tp1":NUM,"tp2":NUM,"tp3":NUM,"rr_ratio":NUM,"trend_m5":"UPTREND/DOWNTREND/SIDEWAYS","trend_h1":"UPTREND/DOWNTREND/SIDEWAYS","support1":NUM,"support2":NUM,"resistance1":NUM,"resistance2":NUM,"rsi_status":"OVERSOLD/OVERBOUGHT/NEUTRAL/BULLISH_DIV","ema_cross":"GOLDEN/DEATH/BULLISH/BEARISH/NEUTRAL","macd_status":"BULLISH/BEARISH/NEUTRAL","momentum":"STRONG/WEAK/NEUTRAL","market_structure":"BOS/CHOCH/CONTINUATION/ACCUMULATION","alasan":"max 20 kata bahasa Indonesia","strategi":"max 20 kata bahasa Indonesia","warning":"max 15 kata bahasa Indonesia"}`
+      );
+      const a = parseJSON(t2);
+      setAnalisa({ ...a, livePrice: p.toFixed(2), time: new Date().toLocaleTimeString("id-ID") });
+      setPhase("done");
+
+      timerRef.current = setInterval(run, 60000);
+    } catch (e) {
+      setErrMsg(e.message);
+      setPhase("error");
+    }
+    busyRef.current = false;
+  }, []);
+
+  const setMode = (m) => {
+    modeRef.current = m;
+    setModeState(m);
+    setAnalisa(null);
+    clearInterval(timerRef.current);
+    run();
+  };
+
+  useEffect(() => { run(); return () => clearInterval(timerRef.current); }, [run]);
+
+  const p = priceData?.price;
+  const loading = phase === "price" || phase === "analysis";
+  const priceColor = flashDir === "up" ? C.green : flashDir === "down" ? C.red : C.gold;
+  const flashBg = flashDir === "up" ? "rgba(34,197,94,.15)" : flashDir === "down" ? "rgba(239,68,68,.15)" : "transparent";
+
+  const a = analisa;
+  const sigColor = !a ? C.gold : a.signal === "BUY" ? "#16a34a" : a.signal === "SELL" ? "#dc2626" : "#ca8a04";
+  const biasColor = !a ? C.gold : a.bias === "BULLISH" ? C.green : a.bias === "BEARISH" ? C.red : C.gold;
+  const confColor = !a ? C.gold : a.confidence >= 70 ? C.green : a.confidence >= 50 ? C.gold : C.red;
+  const tpc = !a ? C.gold : a.signal === "BUY" ? C.green : C.red;
+  const slc = !a ? C.gold : a.signal === "BUY" ? C.red : C.green;
+
+  return (
+    <div style={{ background: C.bg, minHeight: "100vh", color: C.text, fontFamily: "Arial,sans-serif", padding: 12 }}>
+      <style>{`
+        @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.65)}}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        * { box-sizing: border-box; }
+      `}</style>
+      <div style={{ maxWidth: 560, margin: "0 auto" }}>
+
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 14, paddingTop: 6 }}>
+          <h1 style={{ color: "gold", fontSize: 24, fontWeight: 900, letterSpacing: ".12em", margin: "0 0 4px" }}>⚡ SNIPER PRO</h1>
+          <p style={{ color: C.green, fontSize: 11, letterSpacing: ".16em", textTransform: "uppercase", margin: 0 }}>XAUUSD · Claude AI · Live Price + Analysis</p>
+        </div>
+
+        {/* Mode */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+          {[["scalp", "⚡ SCALPING (M5)", "#16a34a"], ["swing", "🏆 SWING (H1)", "#9333ea"]].map(([m, label, bg]) => (
+            <button key={m} onClick={() => setMode(m)} disabled={loading} style={{
+              padding: "13px 8px", border: `2px solid ${mode === m ? bg : "transparent"}`,
+              borderRadius: 12, background: mode === m ? bg : C.sm,
+              color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", width: "100%"
+            }}>{label}</button>
+          ))}
+        </div>
+
+        {/* Price Card */}
+        <Card style={{ textAlign: "center", background: flashBg !== "transparent" ? flashBg : C.card, transition: "background .5s" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 6 }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: loading ? C.gold : C.green, boxShadow: `0 0 6px ${loading ? C.gold : C.green}`, animation: "pulse 1.8s infinite", display: "inline-block" }} />
+            <span style={{ color: C.dim, fontSize: 11, textTransform: "uppercase", letterSpacing: ".14em" }}>
+              XAUUSD · {mode === "scalp" ? "M5" : "H1"} · Live
+            </span>
+            <button onClick={run} disabled={loading} style={{ background: C.sm, border: `1px solid #334155`, borderRadius: 8, color: C.gold, fontSize: 11, fontWeight: 700, padding: "2px 9px", cursor: "pointer", marginLeft: 4 }}>↻</button>
+          </div>
+          <div style={{ fontFamily: "monospace", fontSize: "clamp(3rem,13vw,5rem)", fontWeight: 700, color: priceColor, lineHeight: 1, marginBottom: 6, transition: "color .3s" }}>
+            {loading && !p ? "..." : p ? p.toFixed(2) : "—"}
+          </div>
+          {priceData && (
+            <div style={{ display: "flex", justifyContent: "center", gap: 14, fontSize: 12, flexWrap: "wrap", color: C.dim }}>
+              <span>H <b style={{ color: C.green }}>{priceData.high?.toFixed(2)}</b></span>
+              <span>L <b style={{ color: C.red }}>{priceData.low?.toFixed(2)}</b></span>
+              <span>Src <b style={{ color: C.text }}>{priceData.source}</b></span>
+            </div>
+          )}
+          <div style={{ color: "#334155", fontSize: 10, marginTop: 6 }}>
+            {phase === "price" ? "🔍 Mencari harga live..." : phase === "analysis" ? "🧠 Claude AI menganalisa..." : phase === "done" ? `✓ ${new Date().toLocaleTimeString("id-ID")} · Auto refresh 60s` : "Klik Analisa"}
+          </div>
+        </Card>
+
+        {/* Run Button */}
+        <button onClick={run} disabled={loading} style={{
+          width: "100%", padding: 15, border: "none", borderRadius: 16,
+          background: loading ? "#7f1d1d" : "linear-gradient(135deg,#b91c1c,#dc2626)",
+          color: "#fff", fontSize: 18, fontWeight: 900, cursor: loading ? "not-allowed" : "pointer",
+          marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8
+        }}>
+          {loading ? (
+            <><span style={{ width: 18, height: 18, border: "2px solid rgba(255,255,255,.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 1s linear infinite", display: "inline-block" }} />
+            {phase === "price" ? "Mencari harga..." : "Menganalisa..."}</>
+          ) : "🎯 ANALISA SEKARANG"}
+        </button>
+
+        {/* Error */}
+        {phase === "error" && (
+          <Card style={{ background: "#1a0808", borderColor: C.red, textAlign: "center" }}>
+            <p style={{ color: C.red, marginBottom: 10 }}>❌ {errMsg}</p>
+            <button onClick={run} style={{ background: C.red, color: "#fff", border: "none", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontWeight: 700 }}>Coba Lagi</button>
+          </Card>
+        )}
+
+        {/* Result */}
+        {a && (
+          <Card>
+            {/* Signal */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <div>
+                <div style={{ color: "#475569", fontSize: 11, textTransform: "uppercase", letterSpacing: ".12em", marginBottom: 6 }}>AI Signal · {a.time}</div>
+                <span style={{ background: sigColor, color: "#fff", borderRadius: 20, padding: "5px 18px", fontSize: 16, fontWeight: 900 }}>{a.signal}</span>
+                <span style={{ color: biasColor, fontSize: 13, fontWeight: 700, marginLeft: 10 }}>{a.bias}</span>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ color: "#475569", fontSize: 11, marginBottom: 2 }}>Confidence</div>
+                <div style={{ color: confColor, fontFamily: "monospace", fontWeight: 900, fontSize: 26 }}>{a.confidence}%</div>
+              </div>
+            </div>
+            <Bar pct={a.confidence} color={confColor} />
+
+            {/* Rows */}
+            <div style={{ marginTop: 12 }}>
+              <Row label="Mode" value={mode === "scalp" ? "⚡ Scalping M5" : "🏆 Swing H1"} />
+              <Row label="Harga Live" value={a.livePrice} color={C.gold} />
+              <Row label="Trend M5" value={a.trend_m5} color={iColor(a.trend_m5)} />
+              <Row label="Trend H1" value={a.trend_h1} color={iColor(a.trend_h1)} />
+              <Row label="RSI Status" value={(a.rsi_status||"").replace(/_/g," ")} color={iColor(a.rsi_status)} />
+              <Row label="MACD" value={a.macd_status} color={iColor(a.macd_status)} />
+              <Row label="EMA Cross" value={(a.ema_cross||"").replace(/_/g," ")} color={iColor(a.ema_cross)} />
+              <Row label="Market Structure" value={(a.market_structure||"").replace(/_/g," ")} color={C.purple} />
+              <Row label="Entry" value={parseFloat(a.entry).toFixed(2)} />
+              <Row label="Stop Loss" value={parseFloat(a.sl).toFixed(2)} color={slc} />
+              <Row label="TP 1" value={parseFloat(a.tp1).toFixed(2) + pts(a.tp1, a.livePrice)} color={tpc} />
+              <Row label="TP 2" value={parseFloat(a.tp2).toFixed(2) + pts(a.tp2, a.livePrice)} color={tpc} />
+              <Row label="TP 3" value={parseFloat(a.tp3).toFixed(2) + pts(a.tp3, a.livePrice)} color={tpc} />
+              <Row label="R:R Ratio" value={"1 : " + parseFloat(a.rr_ratio || 2).toFixed(1)} color={C.gold} />
+              <Row label="Sesi" value={getSession()} color={C.blue} />
+            </div>
+
+            {/* S/R */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 14 }}>
+              {[["⬆ Resistance", [["R1", a.resistance1, C.red], ["R2", a.resistance2, "#fca5a5"]]], ["⬇ Support", [["S1", a.support1, C.green], ["S2", a.support2, "#86efac"]]]].map(([title, items]) => (
+                <div key={title}>
+                  <div style={{ color: title.includes("R") ? C.red : C.green, fontSize: 11, fontWeight: 700, marginBottom: 6, textTransform: "uppercase" }}>{title}</div>
+                  {items.map(([label, val, color]) => (
+                    <Sm key={label} style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                      <span style={{ color: C.dim, fontSize: 12 }}>{label}</span>
+                      <span style={{ color, fontFamily: "monospace", fontWeight: 700 }}>{parseFloat(val || 0).toFixed(2)}</span>
+                    </Sm>
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            {/* Indicator Bars */}
+            <Sm style={{ marginTop: 12 }}>
+              <div style={{ color: "#94a3b8", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", marginBottom: 12 }}>📊 Indikator</div>
+              {[["RSI(14)", a.rsi_status], ["EMA Cross", a.ema_cross], ["MACD", a.macd_status], ["Momentum", a.momentum]].map(([label, val]) => (
+                <div key={label} style={{ marginBottom: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 2 }}>
+                    <span style={{ color: "#94a3b8" }}>{label}</span>
+                    <span style={{ color: iColor(val), fontWeight: 700 }}>{(val || "—").replace(/_/g, " ")}</span>
+                  </div>
+                  <Bar pct={iPct(val)} color={iColor(val)} />
+                </div>
+              ))}
+            </Sm>
+
+            {/* Narasi */}
+            {[["💡 Alasan", a.alasan, C.gold], ["📌 Strategi", a.strategi, C.green], ["⚠ Warning", a.warning, "#fb923c"]].map(([label, text, color]) => (
+              <Sm key={label} style={{ marginTop: 8, borderLeft: `3px solid ${color}` }}>
+                <div style={{ color, fontSize: 11, fontWeight: 700, marginBottom: 3 }}>{label}</div>
+                <div style={{ color: "#cbd5e1", fontSize: 13, lineHeight: 1.5 }}>{text || "—"}</div>
+              </Sm>
+            ))}
+
+            <div style={{ color: "#334155", fontSize: 11, textAlign: "center", marginTop: 14 }}>
+              ⚡ Claude AI · Harga live: <strong style={{ color: C.gold }}>{a.livePrice}</strong> · Bukan saran investasi
+            </div>
+          </Card>
+        )}
+
+        {/* TradingView */}
+        <div style={{ borderRadius: 16, overflow: "hidden", marginBottom: 20, height: 360 }}>
+          <iframe
+            src={`https://www.tradingview.com/widgetembed/?symbol=OANDA%3AXAUUSD&interval=${mode === "scalp" ? "5" : "60"}&theme=dark&style=1&locale=id&hide_side_toolbar=1&studies=RSI%40tv-basicstudies%2CMACD%40tv-basicstudies%2CMAExp%40tv-basicstudies`}
+            width="100%" height="100%" frameBorder="0" allowFullScreen style={{ display: "block" }}
+          />
+        </div>
+
+      </div>
+    </div>
+  );
+}
