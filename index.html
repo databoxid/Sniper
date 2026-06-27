@@ -3,944 +3,315 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SNIPER PRO - Live XAUUSD</title>
+<title>SNIPER PRO - XAUUSD AI</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  background: #080d17;
-  color: #f1f5f9;
-  font-family: Arial, sans-serif;
-  padding: 12px;
-  min-height: 100vh;
-}
-.wrap { max-width: 560px; margin: 0 auto; }
-
-/* Header */
-h1 { color: gold; font-size: 26px; font-weight: 900; text-align: center; letter-spacing: .12em; margin-bottom: 4px; }
-.subtitle { color: #4ade80; font-size: 11px; letter-spacing: .16em; text-align: center; text-transform: uppercase; margin-bottom: 14px; }
-
-/* Mode buttons */
-.mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-.mode-btn {
-  padding: 13px 8px; border: 2px solid transparent; border-radius: 12px;
-  background: #1e293b; color: #fff; font-size: 14px; font-weight: 800;
-  cursor: pointer; transition: all .2s; width: 100%;
-}
-.mode-btn.active-scalp { background: #16a34a; border-color: #16a34a; }
-.mode-btn.active-swing { background: #9333ea; border-color: #9333ea; }
-
-/* Cards */
-.card { background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 16px; margin-bottom: 12px; }
-.sm-card { background: #1e293b; border-radius: 12px; padding: 10px 14px; }
-
-/* Price */
-.price-wrap { text-align: center; transition: background .5s; }
-.live-label { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 6px; }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 6px #22c55e; display: inline-block; animation: pulse 1.8s infinite; }
-.dot.loading { background: #facc15; box-shadow: 0 0 6px #facc15; }
-.live-text { color: #64748b; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
-.price-num {
-  font-family: monospace; font-size: clamp(3rem,13vw,5rem);
-  font-weight: 700; color: #facc15; letter-spacing: -.02em;
-  line-height: 1; margin-bottom: 6px; transition: color .3s;
-}
-.price-num.up   { color: #22c55e; }
-.price-num.down { color: #ef4444; }
-.price-stats { display: flex; justify-content: center; gap: 12px; font-size: 12px; flex-wrap: wrap; }
-.price-stats span { color: #64748b; }
-.update-label { color: #334155; font-size: 10px; margin-top: 6px; text-align: center; }
-
-/* Bar */
-.bar-track { height: 5px; border-radius: 3px; background: #1e293b; overflow: hidden; margin-top: 4px; }
-.bar-fill   { height: 100%; border-radius: 3px; transition: width .8s ease; }
-
-/* Row */
-.row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #1e293b; }
-.row .lbl { color: #94a3b8; font-size: 13px; }
-.row .val { color: #f1f5f9; font-size: 13px; font-weight: 700; font-family: monospace; }
-
-/* Signal */
-.signal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.sig-badge { border-radius: 20px; padding: 5px 18px; font-size: 16px; font-weight: 900; color: #fff; display: inline-block; }
-.conf-num { font-family: monospace; font-weight: 900; font-size: 26px; }
-.sig-time { color: #475569; font-size: 11px; text-transform: uppercase; letter-spacing: .12em; margin-bottom: 6px; }
-
-/* S/R grid */
-.sr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
-.sr-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-
-/* Narasi */
-.narasi { border-radius: 12px; padding: 10px 14px; margin-top: 8px; }
-
-/* Analisa btn */
-#run {
-  width: 100%; padding: 16px; border: none; border-radius: 16px;
-  background: linear-gradient(135deg,#b91c1c,#dc2626);
-  color: #fff; font-size: 18px; font-weight: 900; letter-spacing: .08em;
-  cursor: pointer; box-shadow: 0 4px 24px rgba(220,38,38,.35);
-  margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;
-  transition: opacity .2s;
-}
-#run:disabled { opacity: .6; cursor: not-allowed; }
-
-/* Spinner */
-.spinner {
-  width: 20px; height: 20px; border: 2px solid rgba(255,255,255,.3);
-  border-top-color: #fff; border-radius: 50%;
-  animation: spin 1s linear infinite; display: inline-block;
-}
-
-/* Flash */
-.flash-up   { animation: flashUp .5s ease; }
-.flash-down { animation: flashDown .5s ease; }
-
-/* Loading card */
-#loading-card { text-align: center; padding: 30px 16px; display: none; }
-.big-spinner {
-  width: 36px; height: 36px; border: 3px solid #1e293b; border-top-color: #facc15;
-  border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 12px;
-}
-
-/* Error */
-#error-card { display: none; background: #1a0808; border-color: #ef4444; text-align: center; }
-
-/* Chart */
-#chart-wrap { border-radius: 16px; overflow: hidden; margin-bottom: 20px; height: 360px; }
-#chart-wrap iframe { width: 100%; height: 100%; border: none; display: block; }
-
-@keyframes pulse  { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.65)} }
-@keyframes spin   { to{transform:rotate(360deg)} }
-@keyframes flashUp   { 0%{background:rgba(34,197,94,.18)} 100%{background:transparent} }
-@keyframes flashDown { 0%{background:rgba(239,68,68,.18)} 100%{background:transparent} }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#080d17;font-family:Arial,sans-serif;}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.65)}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes fg{0%{background:rgba(34,197,94,.18)}100%{background:transparent}}
+  @keyframes fr{0%{background:rgba(239,68,68,.18)}100%{background:transparent}}
+  .fg{animation:fg .6s ease;}
+  .fr{animation:fr .6s ease;}
 </style>
 </head>
 <body>
-<div class="wrap">
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
 
-  <!-- Header -->
-  <h1>⚡ SNIPER PRO</h1>
-  <p class="subtitle">Live XAUUSD · TwelveData + Claude AI · Real Data</p>
+const MODEL = "claude-sonnet-4-6";
+const KEY_STORE = "sniper_pro_apikey";
 
-  <!-- Mode -->
-  <div class="mode-grid">
-    <button class="mode-btn active-scalp" id="btn-scalp" onclick="setMode('scalp')">⚡ SCALPING (M5)</button>
-    <button class="mode-btn" id="btn-swing" onclick="setMode('swing')">🏆 SWING (H1)</button>
-  </div>
+const C = {
+  bg:"#080d17", card:"#0f172a", border:"#1e293b", sm:"#1e293b",
+  text:"#f1f5f9", dim:"#64748b", gold:"#facc15", green:"#22c55e",
+  red:"#ef4444", purple:"#a78bfa", blue:"#60a5fa",
+};
 
-  <!-- Price Card -->
-  <div class="card price-wrap" id="price-box">
-    <div class="live-label">
-      <span class="dot" id="dot"></span>
-      <span class="live-text" id="live-tf">XAUUSD · M5 · TwelveData</span>
-      <button onclick="runAnalisa()" style="background:#1e293b;border:1px solid #334155;border-radius:8px;color:#facc15;font-size:11px;font-weight:700;padding:2px 9px;cursor:pointer;margin-left:4px;">↻</button>
-    </div>
-    <div class="price-num" id="price-num">—</div>
-    <div class="price-stats" id="price-stats" style="display:none">
-      <span>EMA20 <b id="s-ema20" style="color:#e2e8f0">—</b></span>
-      <span>|</span>
-      <span>RSI <b id="s-rsi" style="color:#facc15">—</b></span>
-      <span>|</span>
-      <span>BOS <b id="s-bos" style="color:#64748b">—</b></span>
-    </div>
-    <div class="update-label" id="update-label">Memuat data...</div>
-  </div>
-
-  <!-- Error -->
-  <div class="card" id="error-card">
-    <p id="error-msg" style="color:#ef4444;margin-bottom:10px"></p>
-    <button onclick="runAnalisa()" style="background:#ef4444;color:#fff;border:none;border-radius:8px;padding:8px 20px;cursor:pointer;font-weight:700;">Coba Lagi</button>
-  </div>
-
-  <!-- Loading -->
-  <div class="card" id="loading-card">
-    <div class="big-spinner"></div>
-    <p style="color:#64748b;font-size:14px">Mengambil data real TwelveData + Analisa Claude AI...</p>
-  </div>
-
-  <!-- Result Card -->
-  <div class="card" id="result-card" style="display:none">
-
-    <!-- Signal Header -->
-    <div class="signal-head">
-      <div>
-        <div class="sig-time" id="sig-time">AI Signal</div>
-        <span class="sig-badge" id="sig-badge">—</span>
-        <span id="sig-bias" style="font-size:13px;font-weight:700;margin-left:10px">—</span>
-      </div>
-      <div style="text-align:right">
-        <div style="color:#475569;font-size:11px;margin-bottom:2px">Confidence</div>
-        <div class="conf-num" id="conf-num">—</div>
-      </div>
-    </div>
-    <div class="bar-track"><div class="bar-fill" id="conf-bar" style="width:0%"></div></div>
-
-    <!-- Rows -->
-    <div style="margin-top:12px" id="rows-wrap">
-      <div class="row"><span class="lbl">Mode</span><span class="val" id="r-mode">—</span></div>
-      <div class="row"><span class="lbl">Harga Live</span><span class="val" id="r-harga" style="color:#facc15">—</span></div>
-      <div class="row"><span class="lbl">Trend</span><span class="val" id="r-trend">—</span></div>
-      <div class="row"><span class="lbl">EMA20</span><span class="val" id="r-ema20">—</span></div>
-      <div class="row"><span class="lbl">EMA50</span><span class="val" id="r-ema50">—</span></div>
-      <div class="row"><span class="lbl">EMA200</span><span class="val" id="r-ema200">—</span></div>
-      <div class="row"><span class="lbl">RSI(14)</span><span class="val" id="r-rsi">—</span></div>
-      <div class="row"><span class="lbl">BOS</span><span class="val" id="r-bos">—</span></div>
-      <div class="row"><span class="lbl">Rejection</span><span class="val" id="r-reject">—</span></div>
-      <div class="row"><span class="lbl">Entry</span><span class="val" id="r-entry">—</span></div>
-      <div class="row"><span class="lbl">Stop Loss</span><span class="val" id="r-sl">—</span></div>
-      <div class="row"><span class="lbl">TP 1</span><span class="val" id="r-tp1">—</span></div>
-      <div class="row"><span class="lbl">TP 2</span><span class="val" id="r-tp2">—</span></div>
-      <div class="row"><span class="lbl">TP 3</span><span class="val" id="r-tp3">—</span></div>
-      <div class="row"><span class="lbl">R:R Ratio</span><span class="val" id="r-rr" style="color:#facc15">—</span></div>
-      <div class="row" style="border:none"><span class="lbl">Sesi</span><span class="val" id="r-sesi" style="color:#60a5fa">—</span></div>
-    </div>
-
-    <!-- S/R -->
-    <div class="sr-grid">
-      <div>
-        <div style="color:#ef4444;font-size:11px;font-weight:700;margin-bottom:6px;text-transform:uppercase">⬆ Resistance</div>
-        <div class="sm-card sr-row" style="margin-bottom:6px"><span style="color:#64748b;font-size:12px">R1</span><span id="r-res1" style="color:#ef4444;font-family:monospace;font-weight:700;font-size:13px">—</span></div>
-        <div class="sm-card sr-row"><span style="color:#64748b;font-size:12px">R2</span><span id="r-res2" style="color:#fca5a5;font-family:monospace;font-weight:700;font-size:13px">—</span></div>
-      </div>
-      <div>
-        <div style="color:#22c55e;font-size:11px;font-weight:700;margin-bottom:6px;text-transform:uppercase">⬇ Support</div>
-        <div class="sm-card sr-row" style="margin-bottom:6px"><span style="color:#64748b;font-size:12px">S1</span><span id="r-sup1" style="color:#22c55e;font-family:monospace;font-weight:700;font-size:13px">—</span></div>
-        <div class="sm-card sr-row"><span style="color:#64748b;font-size:12px">S2</span><span id="r-sup2" style="color:#86efac;font-family:monospace;font-weight:700;font-size:13px">—</span></div>
-      </div>
-    </div>
-
-    <!-- Indicator Bars -->
-    <div class="sm-card" style="margin-top:12px">
-      <div style="color:#94a3b8;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">📊 Indikator</div>
-      <div id="ind-bars"></div>
-    </div>
-
-    <!-- Narasi -->
-    <div id="narasi-wrap"></div>
-
-    <div style="color:#334155;font-size:11px;text-align:center;margin-top:14px">
-      ⚡ Data real TwelveData · AI: Claude · Harga: <strong id="footer-price" style="color:#facc15">—</strong> · Bukan saran investasi
-    </div>
-  </div>
-
-  <!-- Chart -->
-  <div id="chart-wrap">
-    <iframe id="tv-frame" src="https://www.tradingview.com/widgetembed/?symbol=OANDA%3AXAUUSD&interval=5&theme=dark&style=1&locale=id&hide_side_toolbar=1&studies=RSI%40tv-basicstudies%2CMACD%40tv-basicstudies" allowfullscreen></iframe>
-  </div>
-
-</div>
-
-<script>
-const TWELVE_KEY = "8d340afae8a0426c9b9d04701ce424b9";
-const CLAUDE_API = "https://api.anthropic.com/v1/messages";
-
-let MODE = "scalp";
-let prevPrice = null;
-let autoTimer = null;
-
-// ── TECHNICAL ────────────────────────────────────────────────────
-function calcEMA(data, period) {
-  if (data.length < period) return null;
-  const k = 2 / (period + 1);
-  let ema = data.slice(0, period).reduce((a, b) => a + b, 0) / period;
-  for (let i = period; i < data.length; i++) ema = data[i] * k + ema * (1 - k);
-  return ema;
-}
-
-function calcRSI(data, period = 14) {
-  if (data.length < period + 1) return null;
-  const slice = data.slice(-period - 1);
-  let gain = 0, loss = 0;
-  for (let i = 1; i < slice.length; i++) {
-    const d = slice[i] - slice[i - 1];
-    if (d > 0) gain += d; else loss += Math.abs(d);
-  }
-  const rs = (gain / period) / ((loss / period) || 0.0001);
-  return 100 - 100 / (1 + rs);
-}
-
-function calcMACD(data) {
-  const e12 = calcEMA(data, 12), e26 = calcEMA(data, 26);
-  return (e12 && e26) ? e12 - e26 : null;
-}
-
-function detectBOS(highs, lows) {
-  if (highs.at(-1) > Math.max(...highs.slice(-10, -1))) return "Bullish";
-  if (lows.at(-1) < Math.min(...lows.slice(-10, -1))) return "Bearish";
-  return "None";
-}
-
-function detectRejection(c) {
-  const o = +c.open, cl = +c.close, h = +c.high, l = +c.low;
-  const body = Math.abs(cl - o);
-  const upper = h - Math.max(o, cl);
-  const lower = Math.min(o, cl) - l;
-  if (lower > body * 2) return "Bullish";
-  if (upper > body * 2) return "Bearish";
-  return "None";
-}
-
-function getSession() {
-  const h = new Date().getUTCHours();
-  if (h >= 22 || h < 7) return "ASIA";
-  if (h >= 7 && h < 12) return "LONDON";
-  if (h >= 12 && h < 17) return "NEW YORK";
-  return "OVERLAP";
-}
-
-// ── FETCH OHLC ────────────────────────────────────────────────────
-async function fetchOHLC(interval, size = 100) {
-  const url = `https://api.twelvedata.com/time_series?symbol=XAU/USD&interval=${interval}&outputsize=${size}&apikey=${TWELVE_KEY}`;
-  const res = await fetch(url);
-  const json = await res.json();
-  if (!json.values) throw new Error(json.message || "TwelveData error");
-  return json.values.reverse();
-}
-
-// ── CLAUDE ────────────────────────────────────────────────────────
-async function claudeAnalyze(ind) {
-  const res = await fetch(CLAUDE_API, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1000,
-      messages: [{
-        role: "user",
-        content: `Kamu analis teknikal XAUUSD profesional kelas dunia (ICT, SMC, Price Action).
-
-DATA REAL DARI TWELVEDATA (${MODE === "scalp" ? "5 MENIT" : "1 JAM"}):
-- Harga: ${ind.price.toFixed(2)}
-- High 20 candle: ${ind.high.toFixed(2)}
-- Low 20 candle: ${ind.low.toFixed(2)}
-- EMA20: ${ind.ema20.toFixed(2)}
-- EMA50: ${ind.ema50.toFixed(2)}
-- EMA200: ${ind.ema200 ? ind.ema200.toFixed(2) : "N/A"}
-- RSI(14): ${ind.rsi.toFixed(1)}
-- MACD: ${ind.macd ? ind.macd.toFixed(3) : "N/A"}
-- BOS: ${ind.bos}
-- Rejection Candle: ${ind.rejection}
-- Trend: ${ind.trend}
-- Mode: ${MODE === "scalp" ? "SCALPING (target 3-5 pts)" : "SWING (target 20-50 pts)"}
-- Sesi: ${ind.session}
-
-Jawab HANYA JSON murni tanpa teks/markdown/backtick:
-{"signal":"BUY/SELL/WAIT","confidence":0-100,"bias":"BULLISH/BEARISH/NEUTRAL","entry":NUM,"sl":NUM,"tp1":NUM,"tp2":NUM,"tp3":NUM,"rr_ratio":NUM,"support1":NUM,"support2":NUM,"resistance1":NUM,"resistance2":NUM,"rsi_status":"OVERSOLD/OVERBOUGHT/NEUTRAL/BULLISH_DIV","ema_cross":"GOLDEN/DEATH/BULLISH/BEARISH/NEUTRAL","macd_status":"BULLISH/BEARISH/NEUTRAL","momentum":"STRONG/WEAK/NEUTRAL","alasan":"max 20 kata bahasa Indonesia","strategi":"max 20 kata bahasa Indonesia","warning":"max 15 kata bahasa Indonesia"}`
-      }]
-    })
+// ── API ──────────────────────────────────────────────────────────
+async function callClaude(apiKey, prompt, useSearch=false){
+  const body = { model:MODEL, max_tokens:1200, messages:[{role:"user",content:prompt}] };
+  if(useSearch) body.tools=[{type:"web_search_20250305",name:"web_search"}];
+  const res = await fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",
+    headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+    body:JSON.stringify(body)
   });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
-  const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
-  const m = text.replace(/```json|```/g, "").match(/\{[\s\S]*\}/);
-  if (!m) throw new Error("Tidak ada JSON dari Claude");
+  if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e.error?.message||"HTTP "+res.status); }
+  const data=await res.json();
+  return data.content.filter(b=>b.type==="text").map(b=>b.text).join("").trim();
+}
+
+function parseJSON(text){
+  const m=text.replace(/```json|```/g,"").match(/\{[\s\S]*\}/);
+  if(!m) throw new Error("Tidak ada JSON dari Claude");
   return JSON.parse(m[0]);
 }
 
-// ── HELPERS ───────────────────────────────────────────────────────
-function pts(val, base) {
-  if (!val || !base) return "";
-  const d = parseFloat(val) - parseFloat(base);
-  return " (" + (d >= 0 ? "+" : "") + d.toFixed(1) + " pts)";
-}
-
-function indColor(s) {
-  if (!s) return "#facc15";
-  if (["OVERSOLD","GOLDEN","BULLISH","STRONG","BULLISH_DIV"].some(x => s.includes(x))) return "#22c55e";
-  if (["OVERBOUGHT","DEATH","BEARISH","WEAK"].some(x => s.includes(x))) return "#ef4444";
-  return "#facc15";
-}
-function indPct(s) {
-  if (!s) return 50;
-  if (["OVERSOLD","GOLDEN","BULLISH","STRONG","BULLISH_DIV"].some(x => s.includes(x))) return 80;
-  if (["OVERBOUGHT","DEATH","BEARISH","WEAK"].some(x => s.includes(x))) return 20;
-  return 50;
-}
-
-function setEl(id, text, color) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.textContent = text;
-  if (color) el.style.color = color;
-}
-
-// ── SET MODE ──────────────────────────────────────────────────────
-function setMode(m) {
-  MODE = m;
-  document.getElementById("btn-scalp").className = "mode-btn" + (m === "scalp" ? " active-scalp" : "");
-  document.getElementById("btn-swing").className = "mode-btn" + (m === "swing" ? " active-swing" : "");
-  document.getElementById("live-tf").textContent = `XAUUSD · ${m === "scalp" ? "M5" : "H1"} · TwelveData`;
-  document.getElementById("tv-frame").src = `https://www.tradingview.com/widgetembed/?symbol=OANDA%3AXAUUSD&interval=${m === "scalp" ? "5" : "60"}&theme=dark&style=1&locale=id&hide_side_toolbar=1&studies=RSI%40tv-basicstudies%2CMACD%40tv-basicstudies`;
-  document.getElementById("result-card").style.display = "none";
-  clearInterval(autoTimer);
-  runAnalisa();
-}
-
-// ── MAIN ──────────────────────────────────────────────────────────
-async function runAnalisa() {
-  document.getElementById("loading-card").style.display = "block";
-  document.getElementById("error-card").style.display = "none";
-  document.getElementById("dot").className = "dot loading";
-
-  const btn = document.querySelector("#run");
-  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Menganalisa...'; }
-
-  try {
-    const tf = MODE === "scalp" ? "5min" : "1h";
-    const data = await fetchOHLC(tf, 100);
-
-    const close = data.map(x => +x.close);
-    const high  = data.map(x => +x.high);
-    const low   = data.map(x => +x.low);
-    const price = close.at(-1);
-
-    const ema20  = calcEMA(close.slice(-20), 20);
-    const ema50  = calcEMA(close.slice(-50), 50);
-    const ema200 = calcEMA(close, 200);
-    const rsi    = calcRSI(close);
-    const macd   = calcMACD(close);
-    const bos    = detectBOS(high, low);
-    const rejection = detectRejection(data.at(-1));
-    const trend  = (ema20 && ema50) ? (ema20 > ema50 ? "BULLISH" : "BEARISH") : "NEUTRAL";
-
-    // Flash
-    const priceEl = document.getElementById("price-num");
-    if (prevPrice !== null) {
-      priceEl.classList.remove("up","down");
-      void priceEl.offsetWidth;
-      if (price > prevPrice) priceEl.classList.add("up");
-      else if (price < prevPrice) priceEl.classList.add("down");
-      const box = document.getElementById("price-box");
-      box.classList.remove("flash-up","flash-down");
-      void box.offsetWidth;
-      box.classList.add(price > prevPrice ? "flash-up" : "flash-down");
-    }
-    prevPrice = price;
-
-    // Update price UI
-    priceEl.textContent = price.toFixed(2);
-    document.getElementById("price-stats").style.display = "flex";
-    setEl("s-ema20", ema20?.toFixed(1) || "—");
-    setEl("s-rsi", rsi?.toFixed(1) || "—", rsi < 35 ? "#22c55e" : rsi > 65 ? "#ef4444" : "#facc15");
-    setEl("s-bos", bos, bos === "Bullish" ? "#22c55e" : bos === "Bearish" ? "#ef4444" : "#64748b");
-    document.getElementById("update-label").textContent = `Update: ${new Date().toLocaleTimeString("id-ID")} · Auto refresh 60s`;
-    document.getElementById("dot").className = "dot";
-
-    const ind = { price, high: Math.max(...high.slice(-20)), low: Math.min(...low.slice(-20)), ema20, ema50, ema200, rsi, macd, bos, rejection, trend, session: getSession() };
-
-    // Claude
-    const a = await claudeAnalyze(ind);
-    const lp = price.toFixed(2);
-
-    // Render result
-    document.getElementById("loading-card").style.display = "none";
-    document.getElementById("result-card").style.display = "block";
-
-    const sigColor = a.signal === "BUY" ? "#16a34a" : a.signal === "SELL" ? "#dc2626" : "#ca8a04";
-    const biasColor = a.bias === "BULLISH" ? "#22c55e" : a.bias === "BEARISH" ? "#ef4444" : "#facc15";
-    const confColor = a.confidence >= 70 ? "#22c55e" : a.confidence >= 50 ? "#facc15" : "#ef4444";
-    const tpc = a.signal === "BUY" ? "#22c55e" : "#ef4444";
-    const slc = a.signal === "BUY" ? "#ef4444" : "#22c55e";
-
-    const sigBadge = document.getElementById("sig-badge");
-    sigBadge.textContent = a.signal;
-    sigBadge.style.background = sigColor;
-
-    setEl("sig-time", `AI Signal · ${new Date().toLocaleTimeString("id-ID")}`);
-    setEl("sig-bias", a.bias, biasColor);
-    setEl("conf-num", a.confidence + "%", confColor);
-
-    const confBar = document.getElementById("conf-bar");
-    confBar.style.width = a.confidence + "%";
-    confBar.style.background = confColor;
-
-    setEl("r-mode", MODE === "scalp" ? "⚡ Scalping M5" : "🏆 Swing H1");
-    setEl("r-harga", lp, "#facc15");
-    setEl("r-trend", trend, trend === "BULLISH" ? "#22c55e" : "#ef4444");
-    setEl("r-ema20", ema20?.toFixed(2) || "—");
-    setEl("r-ema50", ema50?.toFixed(2) || "—");
-    setEl("r-ema200", ema200?.toFixed(2) || "N/A");
-    setEl("r-rsi", rsi?.toFixed(1) || "—", rsi < 35 ? "#22c55e" : rsi > 65 ? "#ef4444" : "#facc15");
-    setEl("r-bos", bos, bos === "Bullish" ? "#22c55e" : bos === "Bearish" ? "#ef4444" : "#64748b");
-    setEl("r-reject", rejection, rejection === "Bullish" ? "#22c55e" : rejection === "Bearish" ? "#ef4444" : "#64748b");
-    setEl("r-entry", parseFloat(a.entry).toFixed(2));
-    setEl("r-sl", parseFloat(a.sl).toFixed(2), slc);
-    setEl("r-tp1", parseFloat(a.tp1).toFixed(2) + pts(a.tp1, lp), tpc);
-    setEl("r-tp2", parseFloat(a.tp2).toFixed(2) + pts(a.tp2, lp), tpc);
-    setEl("r-tp3", parseFloat(a.tp3).toFixed(2) + pts(a.tp3, lp), tpc);
-    setEl("r-rr", "1 : " + parseFloat(a.rr_ratio || 2).toFixed(1));
-    setEl("r-sesi", ind.session);
-
-    setEl("r-res1", parseFloat(a.resistance1 || 0).toFixed(2));
-    setEl("r-res2", parseFloat(a.resistance2 || 0).toFixed(2));
-    setEl("r-sup1", parseFloat(a.support1 || 0).toFixed(2));
-    setEl("r-sup2", parseFloat(a.support2 || 0).toFixed(2));
-
-    // Indicator bars
-    document.getElementById("ind-bars").innerHTML = [
-      ["RSI(14)", a.rsi_status],
-      ["EMA Cross", a.ema_cross],
-      ["MACD", a.macd_status],
-      ["Momentum", a.momentum],
-    ].map(([label, val]) => `
-      <div style="margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;font-size:12px">
-          <span style="color:#94a3b8">${label}</span>
-          <span style="color:${indColor(val)};font-weight:700">${(val||"—").replace(/_/g," ")}</span>
-        </div>
-        <div class="bar-track"><div class="bar-fill" style="width:${indPct(val)}%;background:${indColor(val)}"></div></div>
-      </div>`).join("");
-
-    // Narasi
-    document.getElementById("narasi-wrap").innerHTML = [
-      ["💡 Alasan", a.alasan, "#facc15"],
-      ["📌 Strategi", a.strategi, "#22c55e"],
-      ["⚠ Warning", a.warning, "#fb923c"],
-    ].map(([label, text, color]) => `
-      <div class="narasi" style="background:#1e293b;border-left:3px solid ${color};margin-top:8px">
-        <div style="color:${color};font-size:11px;font-weight:700;margin-bottom:3px">${label}</div>
-        <div style="color:#cbd5e1;font-size:13px;line-height:1.5">${text || "—"}</div>
-      </div>`).join("");
-
-    setEl("footer-price", lp);
-
-    // Auto refresh
-    clearInterval(autoTimer);
-    autoTimer = setInterval(runAnalisa, 60000);
-
-  } catch(e) {
-    document.getElementById("loading-card").style.display = "none";
-    document.getElementById("error-card").style.display = "block";
-    document.getElementById("error-msg").textContent = "❌ Error: " + e.message;
-    document.getElementById("dot").className = "dot loading";
-  }
-
-  const btn2 = document.querySelector("#run");
-  if (btn2) { btn2.disabled = false; btn2.innerHTML = "🎯 ANALISA SEKARANG"; }
-}
-
-// Boot
-runAnalisa();
-</script>
-</body>
-</html>
-#error-card { display: none; background: #1a0808; border-color: #ef4444; text-align: center; }
-
-/* Chart */
-#chart-wrap { border-radius: 16px; overflow: hidden; margin-bottom: 20px; height: 360px; }
-#chart-wrap iframe { width: 100%; height: 100%; border: none; display: block; }
-
-@keyframes pulse  { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.65)} }
-@keyframes spin   { to{transform:rotate(360deg)} }
-@keyframes flashUp   { 0%{background:rgba(34,197,94,.18)} 100%{background:transparent} }
-@keyframes flashDown { 0%{background:rgba(239,68,68,.18)} 100%{background:transparent} }
-</style>
-</head>
-<body>
-<div class="wrap">
-
-  <!-- Header -->
-  <h1>⚡ SNIPER PRO</h1>
-  <p class="subtitle">Live XAUUSD · TwelveData + Claude AI · Real Data</p>
-
-  <!-- Mode -->
-  <div class="mode-grid">
-    <button class="mode-btn active-scalp" id="btn-scalp" onclick="setMode('scalp')">⚡ SCALPING (M5)</button>
-    <button class="mode-btn" id="btn-swing" onclick="setMode('swing')">🏆 SWING (H1)</button>
-  </div>
-
-  <!-- Price Card -->
-  <div class="card price-wrap" id="price-box">
-    <div class="live-label">
-      <span class="dot" id="dot"></span>
-      <span class="live-text" id="live-tf">XAUUSD · M5 · TwelveData</span>
-      <button onclick="runAnalisa()" style="background:#1e293b;border:1px solid #334155;border-radius:8px;color:#facc15;font-size:11px;font-weight:700;padding:2px 9px;cursor:pointer;margin-left:4px;">↻</button>
-    </div>
-    <div class="price-num" id="price-num">—</div>
-    <div class="price-stats" id="price-stats" style="display:none">
-      <span>EMA20 <b id="s-ema20" style="color:#e2e8f0">—</b></span>
-      <span>|</span>
-      <span>RSI <b id="s-rsi" style="color:#facc15">—</b></span>
-      <span>|</span>
-      <span>BOS <b id="s-bos" style="color:#64748b">—</b></span>
-    </div>
-    <div class="update-label" id="update-label">Memuat data...</div>
-  </div>
-
-  <!-- Error -->
-  <div class="card" id="error-card">
-    <p id="error-msg" style="color:#ef4444;margin-bottom:10px"></p>
-    <button onclick="runAnalisa()" style="background:#ef4444;color:#fff;border:none;border-radius:8px;padding:8px 20px;cursor:pointer;font-weight:700;">Coba Lagi</button>
-  </div>
-
-  <!-- Loading -->
-  <div class="card" id="loading-card">
-    <div class="big-spinner"></div>
-    <p style="color:#64748b;font-size:14px">Mengambil data real TwelveData + Analisa Claude AI...</p>
-  </div>
-
-  <!-- Result Card -->
-  <div class="card" id="result-card" style="display:none">
-
-    <!-- Signal Header -->
-    <div class="signal-head">
-      <div>
-        <div class="sig-time" id="sig-time">AI Signal</div>
-        <span class="sig-badge" id="sig-badge">—</span>
-        <span id="sig-bias" style="font-size:13px;font-weight:700;margin-left:10px">—</span>
-      </div>
-      <div style="text-align:right">
-        <div style="color:#475569;font-size:11px;margin-bottom:2px">Confidence</div>
-        <div class="conf-num" id="conf-num">—</div>
-      </div>
-    </div>
-    <div class="bar-track"><div class="bar-fill" id="conf-bar" style="width:0%"></div></div>
-
-    <!-- Rows -->
-    <div style="margin-top:12px" id="rows-wrap">
-      <div class="row"><span class="lbl">Mode</span><span class="val" id="r-mode">—</span></div>
-      <div class="row"><span class="lbl">Harga Live</span><span class="val" id="r-harga" style="color:#facc15">—</span></div>
-      <div class="row"><span class="lbl">Trend</span><span class="val" id="r-trend">—</span></div>
-      <div class="row"><span class="lbl">EMA20</span><span class="val" id="r-ema20">—</span></div>
-      <div class="row"><span class="lbl">EMA50</span><span class="val" id="r-ema50">—</span></div>
-      <div class="row"><span class="lbl">EMA200</span><span class="val" id="r-ema200">—</span></div>
-      <div class="row"><span class="lbl">RSI(14)</span><span class="val" id="r-rsi">—</span></div>
-      <div class="row"><span class="lbl">BOS</span><span class="val" id="r-bos">—</span></div>
-      <div class="row"><span class="lbl">Rejection</span><span class="val" id="r-reject">—</span></div>
-      <div class="row"><span class="lbl">Entry</span><span class="val" id="r-entry">—</span></div>
-      <div class="row"><span class="lbl">Stop Loss</span><span class="val" id="r-sl">—</span></div>
-      <div class="row"><span class="lbl">TP 1</span><span class="val" id="r-tp1">—</span></div>
-      <div class="row"><span class="lbl">TP 2</span><span class="val" id="r-tp2">—</span></div>
-      <div class="row"><span class="lbl">TP 3</span><span class="val" id="r-tp3">—</span></div>
-      <div class="row"><span class="lbl">R:R Ratio</span><span class="val" id="r-rr" style="color:#facc15">—</span></div>
-      <div class="row" style="border:none"><span class="lbl">Sesi</span><span class="val" id="r-sesi" style="color:#60a5fa">—</span></div>
-    </div>
-
-    <!-- S/R -->
-    <div class="sr-grid">
-      <div>
-        <div style="color:#ef4444;font-size:11px;font-weight:700;margin-bottom:6px;text-transform:uppercase">⬆ Resistance</div>
-        <div class="sm-card sr-row" style="margin-bottom:6px"><span style="color:#64748b;font-size:12px">R1</span><span id="r-res1" style="color:#ef4444;font-family:monospace;font-weight:700;font-size:13px">—</span></div>
-        <div class="sm-card sr-row"><span style="color:#64748b;font-size:12px">R2</span><span id="r-res2" style="color:#fca5a5;font-family:monospace;font-weight:700;font-size:13px">—</span></div>
-      </div>
-      <div>
-        <div style="color:#22c55e;font-size:11px;font-weight:700;margin-bottom:6px;text-transform:uppercase">⬇ Support</div>
-        <div class="sm-card sr-row" style="margin-bottom:6px"><span style="color:#64748b;font-size:12px">S1</span><span id="r-sup1" style="color:#22c55e;font-family:monospace;font-weight:700;font-size:13px">—</span></div>
-        <div class="sm-card sr-row"><span style="color:#64748b;font-size:12px">S2</span><span id="r-sup2" style="color:#86efac;font-family:monospace;font-weight:700;font-size:13px">—</span></div>
-      </div>
-    </div>
-
-    <!-- Indicator Bars -->
-    <div class="sm-card" style="margin-top:12px">
-      <div style="color:#94a3b8;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">📊 Indikator</div>
-      <div id="ind-bars"></div>
-    </div>
-
-    <!-- Narasi -->
-    <div id="narasi-wrap"></div>
-
-    <div style="color:#334155;font-size:11px;text-align:center;margin-top:14px">
-      ⚡ Data real TwelveData · AI: Claude · Harga: <strong id="footer-price" style="color:#facc15">—</strong> · Bukan saran investasi
-    </div>
-  </div>
-
-  <!-- Chart -->
-  <div id="chart-wrap">
-    <iframe id="tv-frame" src="https://www.tradingview.com/widgetembed/?symbol=OANDA%3AXAUUSD&interval=5&theme=dark&style=1&locale=id&hide_side_toolbar=1&studies=RSI%40tv-basicstudies%2CMACD%40tv-basicstudies" allowfullscreen></iframe>
-  </div>
-
-</div>
-
-<script>
-const TWELVE_KEY = "8d340afae8a0426c9b9d04701ce424b9";
-const CLAUDE_API = "https://api.anthropic.com/v1/messages";
-
-let MODE = "scalp";
-let prevPrice = null;
-let autoTimer = null;
-
-// ── TECHNICAL ────────────────────────────────────────────────────
-function calcEMA(data, period) {
-  if (data.length < period) return null;
-  const k = 2 / (period + 1);
-  let ema = data.slice(0, period).reduce((a, b) => a + b, 0) / period;
-  for (let i = period; i < data.length; i++) ema = data[i] * k + ema * (1 - k);
-  return ema;
-}
-
-function calcRSI(data, period = 14) {
-  if (data.length < period + 1) return null;
-  const slice = data.slice(-period - 1);
-  let gain = 0, loss = 0;
-  for (let i = 1; i < slice.length; i++) {
-    const d = slice[i] - slice[i - 1];
-    if (d > 0) gain += d; else loss += Math.abs(d);
-  }
-  const rs = (gain / period) / ((loss / period) || 0.0001);
-  return 100 - 100 / (1 + rs);
-}
-
-function calcMACD(data) {
-  const e12 = calcEMA(data, 12), e26 = calcEMA(data, 26);
-  return (e12 && e26) ? e12 - e26 : null;
-}
-
-function detectBOS(highs, lows) {
-  if (highs.at(-1) > Math.max(...highs.slice(-10, -1))) return "Bullish";
-  if (lows.at(-1) < Math.min(...lows.slice(-10, -1))) return "Bearish";
-  return "None";
-}
-
-function detectRejection(c) {
-  const o = +c.open, cl = +c.close, h = +c.high, l = +c.low;
-  const body = Math.abs(cl - o);
-  const upper = h - Math.max(o, cl);
-  const lower = Math.min(o, cl) - l;
-  if (lower > body * 2) return "Bullish";
-  if (upper > body * 2) return "Bearish";
-  return "None";
-}
-
-function getSession() {
-  const h = new Date().getUTCHours();
-  if (h >= 22 || h < 7) return "ASIA";
-  if (h >= 7 && h < 12) return "LONDON";
-  if (h >= 12 && h < 17) return "NEW YORK";
+function getSession(){
+  const h=new Date().getUTCHours();
+  if(h>=22||h<7) return "ASIA";
+  if(h>=7&&h<12) return "LONDON";
+  if(h>=12&&h<17) return "NEW YORK";
   return "OVERLAP";
 }
+function pts(val,base){ const d=parseFloat(val)-parseFloat(base); return " ("+(d>=0?"+":"")+d.toFixed(1)+")"; }
+function iColor(s=""){ if(["OVERSOLD","GOLDEN","BULLISH","STRONG","BULLISH_DIV","BUY","UPTREND"].some(x=>s.includes(x))) return C.green; if(["OVERBOUGHT","DEATH","BEARISH","WEAK","SELL","DOWNTREND"].some(x=>s.includes(x))) return C.red; return C.gold; }
+function iPct(s=""){ if(["OVERSOLD","GOLDEN","BULLISH","STRONG","BULLISH_DIV","BUY","UPTREND"].some(x=>s.includes(x))) return 80; if(["OVERBOUGHT","DEATH","BEARISH","WEAK","SELL","DOWNTREND"].some(x=>s.includes(x))) return 20; return 50; }
 
-// ── FETCH OHLC ────────────────────────────────────────────────────
-async function fetchOHLC(interval, size = 100) {
-  const url = `https://api.twelvedata.com/time_series?symbol=XAU/USD&interval=${interval}&outputsize=${size}&apikey=${TWELVE_KEY}`;
-  const res = await fetch(url);
-  const json = await res.json();
-  if (!json.values) throw new Error(json.message || "TwelveData error");
-  return json.values.reverse();
-}
+// ── COMPONENTS ────────────────────────────────────────────────────
+function Card({children,style={}}){ return <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:16,marginBottom:12,...style}}>{children}</div>; }
+function Sm({children,style={}}){ return <div style={{background:C.sm,borderRadius:12,padding:"10px 14px",...style}}>{children}</div>; }
+function Bar({pct,color}){ return <div style={{height:5,borderRadius:3,background:"#1a2535",overflow:"hidden",marginTop:4}}><div style={{height:"100%",width:`${Math.min(100,Math.max(0,pct))}%`,background:color,borderRadius:3,transition:"width .8s"}}/></div>; }
+function Row({label,value,color}){ return <div style={{display:"flex",justifyContent:"space-between",padding:"9px 0",borderBottom:`1px solid ${C.border}`}}><span style={{color:"#94a3b8",fontSize:13}}>{label}</span><span style={{color:color||C.text,fontSize:13,fontWeight:700,fontFamily:"monospace"}}>{value}</span></div>; }
 
-// ── CLAUDE ────────────────────────────────────────────────────────
-async function claudeAnalyze(ind) {
-  const res = await fetch(CLAUDE_API, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1000,
-      messages: [{
-        role: "user",
-        content: `Kamu analis teknikal XAUUSD profesional kelas dunia (ICT, SMC, Price Action).
-
-DATA REAL DARI TWELVEDATA (${MODE === "scalp" ? "5 MENIT" : "1 JAM"}):
-- Harga: ${ind.price.toFixed(2)}
-- High 20 candle: ${ind.high.toFixed(2)}
-- Low 20 candle: ${ind.low.toFixed(2)}
-- EMA20: ${ind.ema20.toFixed(2)}
-- EMA50: ${ind.ema50.toFixed(2)}
-- EMA200: ${ind.ema200 ? ind.ema200.toFixed(2) : "N/A"}
-- RSI(14): ${ind.rsi.toFixed(1)}
-- MACD: ${ind.macd ? ind.macd.toFixed(3) : "N/A"}
-- BOS: ${ind.bos}
-- Rejection Candle: ${ind.rejection}
-- Trend: ${ind.trend}
-- Mode: ${MODE === "scalp" ? "SCALPING (target 3-5 pts)" : "SWING (target 20-50 pts)"}
-- Sesi: ${ind.session}
-
-Jawab HANYA JSON murni tanpa teks/markdown/backtick:
-{"signal":"BUY/SELL/WAIT","confidence":0-100,"bias":"BULLISH/BEARISH/NEUTRAL","entry":NUM,"sl":NUM,"tp1":NUM,"tp2":NUM,"tp3":NUM,"rr_ratio":NUM,"support1":NUM,"support2":NUM,"resistance1":NUM,"resistance2":NUM,"rsi_status":"OVERSOLD/OVERBOUGHT/NEUTRAL/BULLISH_DIV","ema_cross":"GOLDEN/DEATH/BULLISH/BEARISH/NEUTRAL","macd_status":"BULLISH/BEARISH/NEUTRAL","momentum":"STRONG/WEAK/NEUTRAL","alasan":"max 20 kata bahasa Indonesia","strategi":"max 20 kata bahasa Indonesia","warning":"max 15 kata bahasa Indonesia"}`
-      }]
-    })
-  });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
-  const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
-  const m = text.replace(/```json|```/g, "").match(/\{[\s\S]*\}/);
-  if (!m) throw new Error("Tidak ada JSON dari Claude");
-  return JSON.parse(m[0]);
-}
-
-// ── HELPERS ───────────────────────────────────────────────────────
-function pts(val, base) {
-  if (!val || !base) return "";
-  const d = parseFloat(val) - parseFloat(base);
-  return " (" + (d >= 0 ? "+" : "") + d.toFixed(1) + " pts)";
-}
-
-function indColor(s) {
-  if (!s) return "#facc15";
-  if (["OVERSOLD","GOLDEN","BULLISH","STRONG","BULLISH_DIV"].some(x => s.includes(x))) return "#22c55e";
-  if (["OVERBOUGHT","DEATH","BEARISH","WEAK"].some(x => s.includes(x))) return "#ef4444";
-  return "#facc15";
-}
-function indPct(s) {
-  if (!s) return 50;
-  if (["OVERSOLD","GOLDEN","BULLISH","STRONG","BULLISH_DIV"].some(x => s.includes(x))) return 80;
-  if (["OVERBOUGHT","DEATH","BEARISH","WEAK"].some(x => s.includes(x))) return 20;
-  return 50;
-}
-
-function setEl(id, text, color) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.textContent = text;
-  if (color) el.style.color = color;
-}
-
-// ── SET MODE ──────────────────────────────────────────────────────
-function setMode(m) {
-  MODE = m;
-  document.getElementById("btn-scalp").className = "mode-btn" + (m === "scalp" ? " active-scalp" : "");
-  document.getElementById("btn-swing").className = "mode-btn" + (m === "swing" ? " active-swing" : "");
-  document.getElementById("live-tf").textContent = `XAUUSD · ${m === "scalp" ? "M5" : "H1"} · TwelveData`;
-  document.getElementById("tv-frame").src = `https://www.tradingview.com/widgetembed/?symbol=OANDA%3AXAUUSD&interval=${m === "scalp" ? "5" : "60"}&theme=dark&style=1&locale=id&hide_side_toolbar=1&studies=RSI%40tv-basicstudies%2CMACD%40tv-basicstudies`;
-  document.getElementById("result-card").style.display = "none";
-  clearInterval(autoTimer);
-  runAnalisa();
-}
-
-// ── MAIN ──────────────────────────────────────────────────────────
-async function runAnalisa() {
-  document.getElementById("loading-card").style.display = "block";
-  document.getElementById("error-card").style.display = "none";
-  document.getElementById("dot").className = "dot loading";
-
-  const btn = document.querySelector("#run");
-  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Menganalisa...'; }
-
-  try {
-    const tf = MODE === "scalp" ? "5min" : "1h";
-    const data = await fetchOHLC(tf, 100);
-
-    const close = data.map(x => +x.close);
-    const high  = data.map(x => +x.high);
-    const low   = data.map(x => +x.low);
-    const price = close.at(-1);
-
-    const ema20  = calcEMA(close.slice(-20), 20);
-    const ema50  = calcEMA(close.slice(-50), 50);
-    const ema200 = calcEMA(close, 200);
-    const rsi    = calcRSI(close);
-    const macd   = calcMACD(close);
-    const bos    = detectBOS(high, low);
-    const rejection = detectRejection(data.at(-1));
-    const trend  = (ema20 && ema50) ? (ema20 > ema50 ? "BULLISH" : "BEARISH") : "NEUTRAL";
-
-    // Flash
-    const priceEl = document.getElementById("price-num");
-    if (prevPrice !== null) {
-      priceEl.classList.remove("up","down");
-      void priceEl.offsetWidth;
-      if (price > prevPrice) priceEl.classList.add("up");
-      else if (price < prevPrice) priceEl.classList.add("down");
-      const box = document.getElementById("price-box");
-      box.classList.remove("flash-up","flash-down");
-      void box.offsetWidth;
-      box.classList.add(price > prevPrice ? "flash-up" : "flash-down");
-    }
-    prevPrice = price;
-
-    // Update price UI
-    priceEl.textContent = price.toFixed(2);
-    document.getElementById("price-stats").style.display = "flex";
-    setEl("s-ema20", ema20?.toFixed(1) || "—");
-    setEl("s-rsi", rsi?.toFixed(1) || "—", rsi < 35 ? "#22c55e" : rsi > 65 ? "#ef4444" : "#facc15");
-    setEl("s-bos", bos, bos === "Bullish" ? "#22c55e" : bos === "Bearish" ? "#ef4444" : "#64748b");
-    document.getElementById("update-label").textContent = `Update: ${new Date().toLocaleTimeString("id-ID")} · Auto refresh 60s`;
-    document.getElementById("dot").className = "dot";
-
-    const ind = { price, high: Math.max(...high.slice(-20)), low: Math.min(...low.slice(-20)), ema20, ema50, ema200, rsi, macd, bos, rejection, trend, session: getSession() };
-
-    // Claude
-    const a = await claudeAnalyze(ind);
-    const lp = price.toFixed(2);
-
-    // Render result
-    document.getElementById("loading-card").style.display = "none";
-    document.getElementById("result-card").style.display = "block";
-
-    const sigColor = a.signal === "BUY" ? "#16a34a" : a.signal === "SELL" ? "#dc2626" : "#ca8a04";
-    const biasColor = a.bias === "BULLISH" ? "#22c55e" : a.bias === "BEARISH" ? "#ef4444" : "#facc15";
-    const confColor = a.confidence >= 70 ? "#22c55e" : a.confidence >= 50 ? "#facc15" : "#ef4444";
-    const tpc = a.signal === "BUY" ? "#22c55e" : "#ef4444";
-    const slc = a.signal === "BUY" ? "#ef4444" : "#22c55e";
-
-    const sigBadge = document.getElementById("sig-badge");
-    sigBadge.textContent = a.signal;
-    sigBadge.style.background = sigColor;
-
-    setEl("sig-time", `AI Signal · ${new Date().toLocaleTimeString("id-ID")}`);
-    setEl("sig-bias", a.bias, biasColor);
-    setEl("conf-num", a.confidence + "%", confColor);
-
-    const confBar = document.getElementById("conf-bar");
-    confBar.style.width = a.confidence + "%";
-    confBar.style.background = confColor;
-
-    setEl("r-mode", MODE === "scalp" ? "⚡ Scalping M5" : "🏆 Swing H1");
-    setEl("r-harga", lp, "#facc15");
-    setEl("r-trend", trend, trend === "BULLISH" ? "#22c55e" : "#ef4444");
-    setEl("r-ema20", ema20?.toFixed(2) || "—");
-    setEl("r-ema50", ema50?.toFixed(2) || "—");
-    setEl("r-ema200", ema200?.toFixed(2) || "N/A");
-    setEl("r-rsi", rsi?.toFixed(1) || "—", rsi < 35 ? "#22c55e" : rsi > 65 ? "#ef4444" : "#facc15");
-    setEl("r-bos", bos, bos === "Bullish" ? "#22c55e" : bos === "Bearish" ? "#ef4444" : "#64748b");
-    setEl("r-reject", rejection, rejection === "Bullish" ? "#22c55e" : rejection === "Bearish" ? "#ef4444" : "#64748b");
-    setEl("r-entry", parseFloat(a.entry).toFixed(2));
-    setEl("r-sl", parseFloat(a.sl).toFixed(2), slc);
-    setEl("r-tp1", parseFloat(a.tp1).toFixed(2) + pts(a.tp1, lp), tpc);
-    setEl("r-tp2", parseFloat(a.tp2).toFixed(2) + pts(a.tp2, lp), tpc);
-    setEl("r-tp3", parseFloat(a.tp3).toFixed(2) + pts(a.tp3, lp), tpc);
-    setEl("r-rr", "1 : " + parseFloat(a.rr_ratio || 2).toFixed(1));
-    setEl("r-sesi", ind.session);
-
-    setEl("r-res1", parseFloat(a.resistance1 || 0).toFixed(2));
-    setEl("r-res2", parseFloat(a.resistance2 || 0).toFixed(2));
-    setEl("r-sup1", parseFloat(a.support1 || 0).toFixed(2));
-    setEl("r-sup2", parseFloat(a.support2 || 0).toFixed(2));
-
-    // Indicator bars
-    document.getElementById("ind-bars").innerHTML = [
-      ["RSI(14)", a.rsi_status],
-      ["EMA Cross", a.ema_cross],
-      ["MACD", a.macd_status],
-      ["Momentum", a.momentum],
-    ].map(([label, val]) => `
-      <div style="margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;font-size:12px">
-          <span style="color:#94a3b8">${label}</span>
-          <span style="color:${indColor(val)};font-weight:700">${(val||"—").replace(/_/g," ")}</span>
+// ── API KEY SCREEN ─────────────────────────────────────────────────
+function ApiKeyScreen({onSave}){
+  const [key,setKey]=useState("");
+  return (
+    <div style={{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:20,padding:24,maxWidth:420,width:"100%"}}>
+        <div style={{textAlign:"center",marginBottom:20}}>
+          <div style={{color:"gold",fontSize:28,fontWeight:900,letterSpacing:".12em"}}>⚡ SNIPER PRO</div>
+          <div style={{color:C.green,fontSize:11,letterSpacing:".16em",textTransform:"uppercase",marginTop:4}}>XAUUSD · Claude AI Analysis</div>
         </div>
-        <div class="bar-track"><div class="bar-fill" style="width:${indPct(val)}%;background:${indColor(val)}"></div></div>
-      </div>`).join("");
-
-    // Narasi
-    document.getElementById("narasi-wrap").innerHTML = [
-      ["💡 Alasan", a.alasan, "#facc15"],
-      ["📌 Strategi", a.strategi, "#22c55e"],
-      ["⚠ Warning", a.warning, "#fb923c"],
-    ].map(([label, text, color]) => `
-      <div class="narasi" style="background:#1e293b;border-left:3px solid ${color};margin-top:8px">
-        <div style="color:${color};font-size:11px;font-weight:700;margin-bottom:3px">${label}</div>
-        <div style="color:#cbd5e1;font-size:13px;line-height:1.5">${text || "—"}</div>
-      </div>`).join("");
-
-    setEl("footer-price", lp);
-
-    // Auto refresh
-    clearInterval(autoTimer);
-    autoTimer = setInterval(runAnalisa, 60000);
-
-  } catch(e) {
-    document.getElementById("loading-card").style.display = "none";
-    document.getElementById("error-card").style.display = "block";
-    document.getElementById("error-msg").textContent = "❌ Error: " + e.message;
-    document.getElementById("dot").className = "dot loading";
-  }
-
-  const btn2 = document.querySelector("#run");
-  if (btn2) { btn2.disabled = false; btn2.innerHTML = "🎯 ANALISA SEKARANG"; }
+        <div style={{color:"#94a3b8",fontSize:13,marginBottom:8}}>Masukkan Anthropic API Key kamu:</div>
+        <input
+          type="password"
+          placeholder="sk-ant-api03-..."
+          value={key}
+          onChange={e=>setKey(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&key.startsWith("sk-")&&onSave(key)}
+          style={{width:"100%",background:C.sm,border:`1px solid ${C.border}`,borderRadius:10,color:C.text,fontSize:14,padding:"10px 14px",marginBottom:12,outline:"none",fontFamily:"monospace"}}
+        />
+        <button
+          onClick={()=>key.startsWith("sk-")&&onSave(key)}
+          style={{width:"100%",padding:"13px",border:"none",borderRadius:12,background:"linear-gradient(135deg,#b91c1c,#dc2626)",color:"#fff",fontSize:16,fontWeight:900,cursor:"pointer"}}
+        >Simpan & Mulai →</button>
+        <div style={{marginTop:16,color:C.dim,fontSize:11,lineHeight:1.6}}>
+          🔒 API key disimpan di browser kamu saja (localStorage), tidak dikirim ke server manapun selain Anthropic.<br/>
+          Dapatkan API key gratis di: <a href="https://console.anthropic.com" target="_blank" style={{color:C.gold}}>console.anthropic.com</a>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-// Boot
-runAnalisa();
+// ── MAIN APP ──────────────────────────────────────────────────────
+function SniperPro({apiKey, onLogout}){
+  const [mode,setModeState]=useState("scalp");
+  const [phase,setPhase]=useState("idle");
+  const [priceData,setPriceData]=useState(null);
+  const [analisa,setAnalisa]=useState(null);
+  const [errMsg,setErrMsg]=useState("");
+  const [flash,setFlash]=useState(null);
+  const prevPriceRef=useRef(null);
+  const busyRef=useRef(false);
+  const timerRef=useRef(null);
+  const modeRef=useRef("scalp");
+  const priceBoxRef=useRef(null);
+
+  const run=useCallback(async()=>{
+    if(busyRef.current) return;
+    busyRef.current=true;
+    clearInterval(timerRef.current);
+    setPhase("price"); setErrMsg("");
+    try{
+      const t1=await callClaude(apiKey,`UTC: ${new Date().toUTCString()}. Search for current live XAUUSD Gold Spot price.\nReply ONLY JSON no markdown: {"price":NUM,"high":NUM,"low":NUM,"open":NUM,"source":"str"}`,true);
+      const pd=parseJSON(t1);
+      if(!pd.price||pd.price<500) throw new Error("Harga tidak valid");
+
+      if(prevPriceRef.current!==null){
+        const dir=pd.price>prevPriceRef.current?"fg":"fr";
+        setFlash(dir);
+        setTimeout(()=>setFlash(null),700);
+      }
+      prevPriceRef.current=pd.price;
+      setPriceData(pd);
+
+      setPhase("analysis");
+      const p=pd.price,high=pd.high||p*1.005,low=pd.low||p*0.995,open=pd.open||p;
+
+      const t2=await callClaude(apiKey,`Kamu analis XAUUSD profesional kelas dunia (ICT, SMC, Price Action, Fibonacci, EMA, RSI, MACD).
+
+DATA LIVE XAUUSD:
+- Harga : ${p.toFixed(2)}
+- Open  : ${open.toFixed(2)}
+- High  : ${high.toFixed(2)}
+- Low   : ${low.toFixed(2)}
+- Range : ${(high-low).toFixed(2)} pts
+- Change: ${(p-open>=0?"+":"")}${(p-open).toFixed(2)} (${((p-open)/open*100).toFixed(2)}%)
+- Mode  : ${modeRef.current==="scalp"?"M5 SCALPING":"H1 SWING"}
+- Sesi  : ${getSession()}
+
+Jawab HANYA JSON murni:
+{"signal":"BUY/SELL/WAIT","confidence":0-100,"bias":"BULLISH/BEARISH/NEUTRAL","entry":NUM,"sl":NUM,"tp1":NUM,"tp2":NUM,"tp3":NUM,"rr_ratio":NUM,"trend_m5":"UPTREND/DOWNTREND/SIDEWAYS","trend_h1":"UPTREND/DOWNTREND/SIDEWAYS","support1":NUM,"support2":NUM,"resistance1":NUM,"resistance2":NUM,"rsi_status":"OVERSOLD/OVERBOUGHT/NEUTRAL/BULLISH_DIV","ema_cross":"GOLDEN/DEATH/BULLISH/BEARISH/NEUTRAL","macd_status":"BULLISH/BEARISH/NEUTRAL","momentum":"STRONG/WEAK/NEUTRAL","market_structure":"BOS/CHOCH/CONTINUATION/ACCUMULATION","alasan":"max 20 kata bahasa Indonesia","strategi":"max 20 kata bahasa Indonesia","warning":"max 15 kata bahasa Indonesia"}`);
+      const a=parseJSON(t2);
+      setAnalisa({...a,livePrice:p.toFixed(2),time:new Date().toLocaleTimeString("id-ID")});
+      setPhase("done");
+      timerRef.current=setInterval(run,60000);
+    }catch(e){ setErrMsg(e.message); setPhase("error"); }
+    busyRef.current=false;
+  },[apiKey]);
+
+  const changeMode=(m)=>{ modeRef.current=m; setModeState(m); setAnalisa(null); clearInterval(timerRef.current); run(); };
+  useEffect(()=>{ run(); return ()=>clearInterval(timerRef.current); },[run]);
+
+  const p=priceData?.price;
+  const loading=phase==="price"||phase==="analysis";
+  const a=analisa;
+  const priceColor=flash==="fg"?C.green:flash==="fr"?C.red:C.gold;
+  const sigColor=!a?C.gold:a.signal==="BUY"?"#16a34a":a.signal==="SELL"?"#dc2626":"#ca8a04";
+  const biasColor=!a?C.gold:a.bias==="BULLISH"?C.green:a.bias==="BEARISH"?C.red:C.gold;
+  const confColor=!a?C.gold:a.confidence>=70?C.green:a.confidence>=50?C.gold:C.red;
+  const tpc=!a?C.gold:a.signal==="BUY"?C.green:C.red;
+  const slc=!a?C.gold:a.signal==="BUY"?C.red:C.green;
+
+  return(
+    <div style={{background:C.bg,minHeight:"100vh",color:C.text,fontFamily:"Arial,sans-serif",padding:12}}>
+      <div style={{maxWidth:560,margin:"0 auto"}}>
+
+        {/* Header */}
+        <div style={{textAlign:"center",marginBottom:14,paddingTop:6}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+            <h1 style={{color:"gold",fontSize:24,fontWeight:900,letterSpacing:".12em",margin:"0 0 4px"}}>⚡ SNIPER PRO</h1>
+            <button onClick={onLogout} title="Ganti API Key" style={{background:"none",border:"1px solid #334155",borderRadius:8,color:C.dim,fontSize:11,padding:"2px 7px",cursor:"pointer"}}>🔑</button>
+          </div>
+          <p style={{color:C.green,fontSize:11,letterSpacing:".16em",textTransform:"uppercase",margin:0}}>XAUUSD · Claude AI · Live Price + Analysis</p>
+        </div>
+
+        {/* Mode Buttons */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+          {[["scalp","⚡ SCALPING (M5)","#16a34a"],["swing","🏆 SWING (H1)","#9333ea"]].map(([m,label,bg])=>(
+            <button key={m} onClick={()=>changeMode(m)} disabled={loading} style={{padding:"13px 8px",border:`2px solid ${mode===m?bg:"transparent"}`,borderRadius:12,background:mode===m?bg:C.sm,color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",width:"100%"}}>{label}</button>
+          ))}
+        </div>
+
+        {/* Price Card */}
+        <div ref={priceBoxRef} className={flash||""}>
+          <Card style={{textAlign:"center"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginBottom:6}}>
+              <span style={{width:8,height:8,borderRadius:"50%",background:loading?C.gold:C.green,boxShadow:`0 0 6px ${loading?C.gold:C.green}`,animation:"pulse 1.8s infinite",display:"inline-block"}}/>
+              <span style={{color:C.dim,fontSize:11,textTransform:"uppercase",letterSpacing:".14em"}}>XAUUSD · {mode==="scalp"?"M5":"H1"} · Live</span>
+              <button onClick={run} disabled={loading} style={{background:C.sm,border:"1px solid #334155",borderRadius:8,color:C.gold,fontSize:11,fontWeight:700,padding:"2px 9px",cursor:"pointer",marginLeft:4}}>↻</button>
+            </div>
+            <div style={{fontFamily:"monospace",fontSize:"clamp(3rem,13vw,5rem)",fontWeight:700,color:priceColor,lineHeight:1,marginBottom:6,transition:"color .3s"}}>
+              {loading&&!p?"...":p?p.toFixed(2):"—"}
+            </div>
+            {priceData&&<div style={{display:"flex",justifyContent:"center",gap:14,fontSize:12,flexWrap:"wrap",color:C.dim}}>
+              <span>H <b style={{color:C.green}}>{priceData.high?.toFixed(2)}</b></span>
+              <span>L <b style={{color:C.red}}>{priceData.low?.toFixed(2)}</b></span>
+              <span>src <b style={{color:C.text}}>{priceData.source}</b></span>
+            </div>}
+            <div style={{color:"#334155",fontSize:10,marginTop:6}}>
+              {phase==="price"?"🔍 Mencari harga live...":phase==="analysis"?"🧠 Claude AI menganalisa...":phase==="done"?`✓ ${new Date().toLocaleTimeString("id-ID")} · Auto refresh 60s`:"Klik Analisa"}
+            </div>
+          </Card>
+        </div>
+
+        {/* Analisa Button */}
+        <button onClick={run} disabled={loading} style={{width:"100%",padding:15,border:"none",borderRadius:16,background:loading?"#7f1d1d":"linear-gradient(135deg,#b91c1c,#dc2626)",color:"#fff",fontSize:18,fontWeight:900,cursor:loading?"not-allowed":"pointer",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+          {loading?<><span style={{width:18,height:18,border:"2px solid rgba(255,255,255,.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 1s linear infinite",display:"inline-block"}}/>{phase==="price"?"Mencari harga...":"Menganalisa..."}</>:"🎯 ANALISA SEKARANG"}
+        </button>
+
+        {/* Error */}
+        {phase==="error"&&<Card style={{background:"#1a0808",borderColor:C.red,textAlign:"center"}}>
+          <p style={{color:C.red,marginBottom:10}}>❌ {errMsg}</p>
+          <button onClick={run} style={{background:C.red,color:"#fff",border:"none",borderRadius:8,padding:"8px 20px",cursor:"pointer",fontWeight:700}}>Coba Lagi</button>
+        </Card>}
+
+        {/* Result */}
+        {a&&<Card>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <div>
+              <div style={{color:"#475569",fontSize:11,textTransform:"uppercase",letterSpacing:".12em",marginBottom:6}}>AI Signal · {a.time}</div>
+              <span style={{background:sigColor,color:"#fff",borderRadius:20,padding:"5px 18px",fontSize:16,fontWeight:900}}>{a.signal}</span>
+              <span style={{color:biasColor,fontSize:13,fontWeight:700,marginLeft:10}}>{a.bias}</span>
+            </div>
+            <div style={{textAlign:"right"}}>
+              <div style={{color:"#475569",fontSize:11,marginBottom:2}}>Confidence</div>
+              <div style={{color:confColor,fontFamily:"monospace",fontWeight:900,fontSize:26}}>{a.confidence}%</div>
+            </div>
+          </div>
+          <Bar pct={a.confidence} color={confColor}/>
+
+          <div style={{marginTop:12}}>
+            <Row label="Mode" value={mode==="scalp"?"⚡ Scalping M5":"🏆 Swing H1"}/>
+            <Row label="Harga Live" value={a.livePrice} color={C.gold}/>
+            <Row label="Trend M5" value={a.trend_m5} color={iColor(a.trend_m5)}/>
+            <Row label="Trend H1" value={a.trend_h1} color={iColor(a.trend_h1)}/>
+            <Row label="RSI" value={(a.rsi_status||"").replace(/_/g," ")} color={iColor(a.rsi_status)}/>
+            <Row label="MACD" value={a.macd_status} color={iColor(a.macd_status)}/>
+            <Row label="EMA Cross" value={(a.ema_cross||"").replace(/_/g," ")} color={iColor(a.ema_cross)}/>
+            <Row label="Structure" value={(a.market_structure||"").replace(/_/g," ")} color={C.purple}/>
+            <Row label="Entry" value={parseFloat(a.entry).toFixed(2)}/>
+            <Row label="Stop Loss" value={parseFloat(a.sl).toFixed(2)} color={slc}/>
+            <Row label="TP 1" value={parseFloat(a.tp1).toFixed(2)+pts(a.tp1,a.livePrice)} color={tpc}/>
+            <Row label="TP 2" value={parseFloat(a.tp2).toFixed(2)+pts(a.tp2,a.livePrice)} color={tpc}/>
+            <Row label="TP 3" value={parseFloat(a.tp3).toFixed(2)+pts(a.tp3,a.livePrice)} color={tpc}/>
+            <Row label="R:R Ratio" value={"1 : "+parseFloat(a.rr_ratio||2).toFixed(1)} color={C.gold}/>
+            <Row label="Sesi" value={getSession()} color={C.blue} style={{border:"none"}}/>
+          </div>
+
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:14}}>
+            {[["⬆ Resistance",[["R1",a.resistance1,C.red],["R2",a.resistance2,"#fca5a5"]]],["⬇ Support",[["S1",a.support1,C.green],["S2",a.support2,"#86efac"]]]].map(([title,items])=>(
+              <div key={title}>
+                <div style={{color:title.includes("R")?C.red:C.green,fontSize:11,fontWeight:700,marginBottom:6,textTransform:"uppercase"}}>{title}</div>
+                {items.map(([label,val,color])=><Sm key={label} style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{color:C.dim,fontSize:12}}>{label}</span><span style={{color,fontFamily:"monospace",fontWeight:700}}>{parseFloat(val||0).toFixed(2)}</span></Sm>)}
+              </div>
+            ))}
+          </div>
+
+          <Sm style={{marginTop:12}}>
+            <div style={{color:"#94a3b8",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:".1em",marginBottom:12}}>📊 Indikator</div>
+            {[["RSI(14)",a.rsi_status],["EMA Cross",a.ema_cross],["MACD",a.macd_status],["Momentum",a.momentum]].map(([label,val])=>(
+              <div key={label} style={{marginBottom:10}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:2}}>
+                  <span style={{color:"#94a3b8"}}>{label}</span>
+                  <span style={{color:iColor(val),fontWeight:700}}>{(val||"—").replace(/_/g," ")}</span>
+                </div>
+                <Bar pct={iPct(val)} color={iColor(val)}/>
+              </div>
+            ))}
+          </Sm>
+
+          {[["💡 Alasan",a.alasan,C.gold],["📌 Strategi",a.strategi,C.green],["⚠ Warning",a.warning,"#fb923c"]].map(([label,text,color])=>(
+            <Sm key={label} style={{marginTop:8,borderLeft:`3px solid ${color}`}}>
+              <div style={{color,fontSize:11,fontWeight:700,marginBottom:3}}>{label}</div>
+              <div style={{color:"#cbd5e1",fontSize:13,lineHeight:1.5}}>{text||"—"}</div>
+            </Sm>
+          ))}
+
+          <div style={{color:"#334155",fontSize:11,textAlign:"center",marginTop:14}}>
+            ⚡ Claude AI · Harga: <strong style={{color:C.gold}}>{a.livePrice}</strong> · Bukan saran investasi
+          </div>
+        </Card>}
+
+        {/* TradingView Chart */}
+        <div style={{borderRadius:16,overflow:"hidden",marginBottom:20,height:360}}>
+          <iframe src={`https://www.tradingview.com/widgetembed/?symbol=OANDA%3AXAUUSD&interval=${mode==="scalp"?"5":"60"}&theme=dark&style=1&locale=id&hide_side_toolbar=1&studies=RSI%40tv-basicstudies%2CMACD%40tv-basicstudies%2CMAExp%40tv-basicstudies`}
+            width="100%" height="100%" frameBorder="0" allowFullScreen style={{display:"block"}}/>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// ── ROOT ──────────────────────────────────────────────────────────
+function App(){
+  const [apiKey,setApiKey]=useState(()=>localStorage.getItem(KEY_STORE)||"");
+  const handleSave=(key)=>{ localStorage.setItem(KEY_STORE,key); setApiKey(key); };
+  const handleLogout=()=>{ localStorage.removeItem(KEY_STORE); setApiKey(""); };
+  if(!apiKey) return <ApiKeyScreen onSave={handleSave}/>;
+  return <SniperPro apiKey={apiKey} onLogout={handleLogout}/>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>
 </html>
