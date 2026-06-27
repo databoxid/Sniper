@@ -523,3 +523,424 @@ runAnalisa();
 </script>
 </body>
 </html>
+#error-card { display: none; background: #1a0808; border-color: #ef4444; text-align: center; }
+
+/* Chart */
+#chart-wrap { border-radius: 16px; overflow: hidden; margin-bottom: 20px; height: 360px; }
+#chart-wrap iframe { width: 100%; height: 100%; border: none; display: block; }
+
+@keyframes pulse  { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.65)} }
+@keyframes spin   { to{transform:rotate(360deg)} }
+@keyframes flashUp   { 0%{background:rgba(34,197,94,.18)} 100%{background:transparent} }
+@keyframes flashDown { 0%{background:rgba(239,68,68,.18)} 100%{background:transparent} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <h1>⚡ SNIPER PRO</h1>
+  <p class="subtitle">Live XAUUSD · TwelveData + Claude AI · Real Data</p>
+
+  <!-- Mode -->
+  <div class="mode-grid">
+    <button class="mode-btn active-scalp" id="btn-scalp" onclick="setMode('scalp')">⚡ SCALPING (M5)</button>
+    <button class="mode-btn" id="btn-swing" onclick="setMode('swing')">🏆 SWING (H1)</button>
+  </div>
+
+  <!-- Price Card -->
+  <div class="card price-wrap" id="price-box">
+    <div class="live-label">
+      <span class="dot" id="dot"></span>
+      <span class="live-text" id="live-tf">XAUUSD · M5 · TwelveData</span>
+      <button onclick="runAnalisa()" style="background:#1e293b;border:1px solid #334155;border-radius:8px;color:#facc15;font-size:11px;font-weight:700;padding:2px 9px;cursor:pointer;margin-left:4px;">↻</button>
+    </div>
+    <div class="price-num" id="price-num">—</div>
+    <div class="price-stats" id="price-stats" style="display:none">
+      <span>EMA20 <b id="s-ema20" style="color:#e2e8f0">—</b></span>
+      <span>|</span>
+      <span>RSI <b id="s-rsi" style="color:#facc15">—</b></span>
+      <span>|</span>
+      <span>BOS <b id="s-bos" style="color:#64748b">—</b></span>
+    </div>
+    <div class="update-label" id="update-label">Memuat data...</div>
+  </div>
+
+  <!-- Error -->
+  <div class="card" id="error-card">
+    <p id="error-msg" style="color:#ef4444;margin-bottom:10px"></p>
+    <button onclick="runAnalisa()" style="background:#ef4444;color:#fff;border:none;border-radius:8px;padding:8px 20px;cursor:pointer;font-weight:700;">Coba Lagi</button>
+  </div>
+
+  <!-- Loading -->
+  <div class="card" id="loading-card">
+    <div class="big-spinner"></div>
+    <p style="color:#64748b;font-size:14px">Mengambil data real TwelveData + Analisa Claude AI...</p>
+  </div>
+
+  <!-- Result Card -->
+  <div class="card" id="result-card" style="display:none">
+
+    <!-- Signal Header -->
+    <div class="signal-head">
+      <div>
+        <div class="sig-time" id="sig-time">AI Signal</div>
+        <span class="sig-badge" id="sig-badge">—</span>
+        <span id="sig-bias" style="font-size:13px;font-weight:700;margin-left:10px">—</span>
+      </div>
+      <div style="text-align:right">
+        <div style="color:#475569;font-size:11px;margin-bottom:2px">Confidence</div>
+        <div class="conf-num" id="conf-num">—</div>
+      </div>
+    </div>
+    <div class="bar-track"><div class="bar-fill" id="conf-bar" style="width:0%"></div></div>
+
+    <!-- Rows -->
+    <div style="margin-top:12px" id="rows-wrap">
+      <div class="row"><span class="lbl">Mode</span><span class="val" id="r-mode">—</span></div>
+      <div class="row"><span class="lbl">Harga Live</span><span class="val" id="r-harga" style="color:#facc15">—</span></div>
+      <div class="row"><span class="lbl">Trend</span><span class="val" id="r-trend">—</span></div>
+      <div class="row"><span class="lbl">EMA20</span><span class="val" id="r-ema20">—</span></div>
+      <div class="row"><span class="lbl">EMA50</span><span class="val" id="r-ema50">—</span></div>
+      <div class="row"><span class="lbl">EMA200</span><span class="val" id="r-ema200">—</span></div>
+      <div class="row"><span class="lbl">RSI(14)</span><span class="val" id="r-rsi">—</span></div>
+      <div class="row"><span class="lbl">BOS</span><span class="val" id="r-bos">—</span></div>
+      <div class="row"><span class="lbl">Rejection</span><span class="val" id="r-reject">—</span></div>
+      <div class="row"><span class="lbl">Entry</span><span class="val" id="r-entry">—</span></div>
+      <div class="row"><span class="lbl">Stop Loss</span><span class="val" id="r-sl">—</span></div>
+      <div class="row"><span class="lbl">TP 1</span><span class="val" id="r-tp1">—</span></div>
+      <div class="row"><span class="lbl">TP 2</span><span class="val" id="r-tp2">—</span></div>
+      <div class="row"><span class="lbl">TP 3</span><span class="val" id="r-tp3">—</span></div>
+      <div class="row"><span class="lbl">R:R Ratio</span><span class="val" id="r-rr" style="color:#facc15">—</span></div>
+      <div class="row" style="border:none"><span class="lbl">Sesi</span><span class="val" id="r-sesi" style="color:#60a5fa">—</span></div>
+    </div>
+
+    <!-- S/R -->
+    <div class="sr-grid">
+      <div>
+        <div style="color:#ef4444;font-size:11px;font-weight:700;margin-bottom:6px;text-transform:uppercase">⬆ Resistance</div>
+        <div class="sm-card sr-row" style="margin-bottom:6px"><span style="color:#64748b;font-size:12px">R1</span><span id="r-res1" style="color:#ef4444;font-family:monospace;font-weight:700;font-size:13px">—</span></div>
+        <div class="sm-card sr-row"><span style="color:#64748b;font-size:12px">R2</span><span id="r-res2" style="color:#fca5a5;font-family:monospace;font-weight:700;font-size:13px">—</span></div>
+      </div>
+      <div>
+        <div style="color:#22c55e;font-size:11px;font-weight:700;margin-bottom:6px;text-transform:uppercase">⬇ Support</div>
+        <div class="sm-card sr-row" style="margin-bottom:6px"><span style="color:#64748b;font-size:12px">S1</span><span id="r-sup1" style="color:#22c55e;font-family:monospace;font-weight:700;font-size:13px">—</span></div>
+        <div class="sm-card sr-row"><span style="color:#64748b;font-size:12px">S2</span><span id="r-sup2" style="color:#86efac;font-family:monospace;font-weight:700;font-size:13px">—</span></div>
+      </div>
+    </div>
+
+    <!-- Indicator Bars -->
+    <div class="sm-card" style="margin-top:12px">
+      <div style="color:#94a3b8;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">📊 Indikator</div>
+      <div id="ind-bars"></div>
+    </div>
+
+    <!-- Narasi -->
+    <div id="narasi-wrap"></div>
+
+    <div style="color:#334155;font-size:11px;text-align:center;margin-top:14px">
+      ⚡ Data real TwelveData · AI: Claude · Harga: <strong id="footer-price" style="color:#facc15">—</strong> · Bukan saran investasi
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div id="chart-wrap">
+    <iframe id="tv-frame" src="https://www.tradingview.com/widgetembed/?symbol=OANDA%3AXAUUSD&interval=5&theme=dark&style=1&locale=id&hide_side_toolbar=1&studies=RSI%40tv-basicstudies%2CMACD%40tv-basicstudies" allowfullscreen></iframe>
+  </div>
+
+</div>
+
+<script>
+const TWELVE_KEY = "8d340afae8a0426c9b9d04701ce424b9";
+const CLAUDE_API = "https://api.anthropic.com/v1/messages";
+
+let MODE = "scalp";
+let prevPrice = null;
+let autoTimer = null;
+
+// ── TECHNICAL ────────────────────────────────────────────────────
+function calcEMA(data, period) {
+  if (data.length < period) return null;
+  const k = 2 / (period + 1);
+  let ema = data.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  for (let i = period; i < data.length; i++) ema = data[i] * k + ema * (1 - k);
+  return ema;
+}
+
+function calcRSI(data, period = 14) {
+  if (data.length < period + 1) return null;
+  const slice = data.slice(-period - 1);
+  let gain = 0, loss = 0;
+  for (let i = 1; i < slice.length; i++) {
+    const d = slice[i] - slice[i - 1];
+    if (d > 0) gain += d; else loss += Math.abs(d);
+  }
+  const rs = (gain / period) / ((loss / period) || 0.0001);
+  return 100 - 100 / (1 + rs);
+}
+
+function calcMACD(data) {
+  const e12 = calcEMA(data, 12), e26 = calcEMA(data, 26);
+  return (e12 && e26) ? e12 - e26 : null;
+}
+
+function detectBOS(highs, lows) {
+  if (highs.at(-1) > Math.max(...highs.slice(-10, -1))) return "Bullish";
+  if (lows.at(-1) < Math.min(...lows.slice(-10, -1))) return "Bearish";
+  return "None";
+}
+
+function detectRejection(c) {
+  const o = +c.open, cl = +c.close, h = +c.high, l = +c.low;
+  const body = Math.abs(cl - o);
+  const upper = h - Math.max(o, cl);
+  const lower = Math.min(o, cl) - l;
+  if (lower > body * 2) return "Bullish";
+  if (upper > body * 2) return "Bearish";
+  return "None";
+}
+
+function getSession() {
+  const h = new Date().getUTCHours();
+  if (h >= 22 || h < 7) return "ASIA";
+  if (h >= 7 && h < 12) return "LONDON";
+  if (h >= 12 && h < 17) return "NEW YORK";
+  return "OVERLAP";
+}
+
+// ── FETCH OHLC ────────────────────────────────────────────────────
+async function fetchOHLC(interval, size = 100) {
+  const url = `https://api.twelvedata.com/time_series?symbol=XAU/USD&interval=${interval}&outputsize=${size}&apikey=${TWELVE_KEY}`;
+  const res = await fetch(url);
+  const json = await res.json();
+  if (!json.values) throw new Error(json.message || "TwelveData error");
+  return json.values.reverse();
+}
+
+// ── CLAUDE ────────────────────────────────────────────────────────
+async function claudeAnalyze(ind) {
+  const res = await fetch(CLAUDE_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1000,
+      messages: [{
+        role: "user",
+        content: `Kamu analis teknikal XAUUSD profesional kelas dunia (ICT, SMC, Price Action).
+
+DATA REAL DARI TWELVEDATA (${MODE === "scalp" ? "5 MENIT" : "1 JAM"}):
+- Harga: ${ind.price.toFixed(2)}
+- High 20 candle: ${ind.high.toFixed(2)}
+- Low 20 candle: ${ind.low.toFixed(2)}
+- EMA20: ${ind.ema20.toFixed(2)}
+- EMA50: ${ind.ema50.toFixed(2)}
+- EMA200: ${ind.ema200 ? ind.ema200.toFixed(2) : "N/A"}
+- RSI(14): ${ind.rsi.toFixed(1)}
+- MACD: ${ind.macd ? ind.macd.toFixed(3) : "N/A"}
+- BOS: ${ind.bos}
+- Rejection Candle: ${ind.rejection}
+- Trend: ${ind.trend}
+- Mode: ${MODE === "scalp" ? "SCALPING (target 3-5 pts)" : "SWING (target 20-50 pts)"}
+- Sesi: ${ind.session}
+
+Jawab HANYA JSON murni tanpa teks/markdown/backtick:
+{"signal":"BUY/SELL/WAIT","confidence":0-100,"bias":"BULLISH/BEARISH/NEUTRAL","entry":NUM,"sl":NUM,"tp1":NUM,"tp2":NUM,"tp3":NUM,"rr_ratio":NUM,"support1":NUM,"support2":NUM,"resistance1":NUM,"resistance2":NUM,"rsi_status":"OVERSOLD/OVERBOUGHT/NEUTRAL/BULLISH_DIV","ema_cross":"GOLDEN/DEATH/BULLISH/BEARISH/NEUTRAL","macd_status":"BULLISH/BEARISH/NEUTRAL","momentum":"STRONG/WEAK/NEUTRAL","alasan":"max 20 kata bahasa Indonesia","strategi":"max 20 kata bahasa Indonesia","warning":"max 15 kata bahasa Indonesia"}`
+      }]
+    })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+  const m = text.replace(/```json|```/g, "").match(/\{[\s\S]*\}/);
+  if (!m) throw new Error("Tidak ada JSON dari Claude");
+  return JSON.parse(m[0]);
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────
+function pts(val, base) {
+  if (!val || !base) return "";
+  const d = parseFloat(val) - parseFloat(base);
+  return " (" + (d >= 0 ? "+" : "") + d.toFixed(1) + " pts)";
+}
+
+function indColor(s) {
+  if (!s) return "#facc15";
+  if (["OVERSOLD","GOLDEN","BULLISH","STRONG","BULLISH_DIV"].some(x => s.includes(x))) return "#22c55e";
+  if (["OVERBOUGHT","DEATH","BEARISH","WEAK"].some(x => s.includes(x))) return "#ef4444";
+  return "#facc15";
+}
+function indPct(s) {
+  if (!s) return 50;
+  if (["OVERSOLD","GOLDEN","BULLISH","STRONG","BULLISH_DIV"].some(x => s.includes(x))) return 80;
+  if (["OVERBOUGHT","DEATH","BEARISH","WEAK"].some(x => s.includes(x))) return 20;
+  return 50;
+}
+
+function setEl(id, text, color) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  if (color) el.style.color = color;
+}
+
+// ── SET MODE ──────────────────────────────────────────────────────
+function setMode(m) {
+  MODE = m;
+  document.getElementById("btn-scalp").className = "mode-btn" + (m === "scalp" ? " active-scalp" : "");
+  document.getElementById("btn-swing").className = "mode-btn" + (m === "swing" ? " active-swing" : "");
+  document.getElementById("live-tf").textContent = `XAUUSD · ${m === "scalp" ? "M5" : "H1"} · TwelveData`;
+  document.getElementById("tv-frame").src = `https://www.tradingview.com/widgetembed/?symbol=OANDA%3AXAUUSD&interval=${m === "scalp" ? "5" : "60"}&theme=dark&style=1&locale=id&hide_side_toolbar=1&studies=RSI%40tv-basicstudies%2CMACD%40tv-basicstudies`;
+  document.getElementById("result-card").style.display = "none";
+  clearInterval(autoTimer);
+  runAnalisa();
+}
+
+// ── MAIN ──────────────────────────────────────────────────────────
+async function runAnalisa() {
+  document.getElementById("loading-card").style.display = "block";
+  document.getElementById("error-card").style.display = "none";
+  document.getElementById("dot").className = "dot loading";
+
+  const btn = document.querySelector("#run");
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Menganalisa...'; }
+
+  try {
+    const tf = MODE === "scalp" ? "5min" : "1h";
+    const data = await fetchOHLC(tf, 100);
+
+    const close = data.map(x => +x.close);
+    const high  = data.map(x => +x.high);
+    const low   = data.map(x => +x.low);
+    const price = close.at(-1);
+
+    const ema20  = calcEMA(close.slice(-20), 20);
+    const ema50  = calcEMA(close.slice(-50), 50);
+    const ema200 = calcEMA(close, 200);
+    const rsi    = calcRSI(close);
+    const macd   = calcMACD(close);
+    const bos    = detectBOS(high, low);
+    const rejection = detectRejection(data.at(-1));
+    const trend  = (ema20 && ema50) ? (ema20 > ema50 ? "BULLISH" : "BEARISH") : "NEUTRAL";
+
+    // Flash
+    const priceEl = document.getElementById("price-num");
+    if (prevPrice !== null) {
+      priceEl.classList.remove("up","down");
+      void priceEl.offsetWidth;
+      if (price > prevPrice) priceEl.classList.add("up");
+      else if (price < prevPrice) priceEl.classList.add("down");
+      const box = document.getElementById("price-box");
+      box.classList.remove("flash-up","flash-down");
+      void box.offsetWidth;
+      box.classList.add(price > prevPrice ? "flash-up" : "flash-down");
+    }
+    prevPrice = price;
+
+    // Update price UI
+    priceEl.textContent = price.toFixed(2);
+    document.getElementById("price-stats").style.display = "flex";
+    setEl("s-ema20", ema20?.toFixed(1) || "—");
+    setEl("s-rsi", rsi?.toFixed(1) || "—", rsi < 35 ? "#22c55e" : rsi > 65 ? "#ef4444" : "#facc15");
+    setEl("s-bos", bos, bos === "Bullish" ? "#22c55e" : bos === "Bearish" ? "#ef4444" : "#64748b");
+    document.getElementById("update-label").textContent = `Update: ${new Date().toLocaleTimeString("id-ID")} · Auto refresh 60s`;
+    document.getElementById("dot").className = "dot";
+
+    const ind = { price, high: Math.max(...high.slice(-20)), low: Math.min(...low.slice(-20)), ema20, ema50, ema200, rsi, macd, bos, rejection, trend, session: getSession() };
+
+    // Claude
+    const a = await claudeAnalyze(ind);
+    const lp = price.toFixed(2);
+
+    // Render result
+    document.getElementById("loading-card").style.display = "none";
+    document.getElementById("result-card").style.display = "block";
+
+    const sigColor = a.signal === "BUY" ? "#16a34a" : a.signal === "SELL" ? "#dc2626" : "#ca8a04";
+    const biasColor = a.bias === "BULLISH" ? "#22c55e" : a.bias === "BEARISH" ? "#ef4444" : "#facc15";
+    const confColor = a.confidence >= 70 ? "#22c55e" : a.confidence >= 50 ? "#facc15" : "#ef4444";
+    const tpc = a.signal === "BUY" ? "#22c55e" : "#ef4444";
+    const slc = a.signal === "BUY" ? "#ef4444" : "#22c55e";
+
+    const sigBadge = document.getElementById("sig-badge");
+    sigBadge.textContent = a.signal;
+    sigBadge.style.background = sigColor;
+
+    setEl("sig-time", `AI Signal · ${new Date().toLocaleTimeString("id-ID")}`);
+    setEl("sig-bias", a.bias, biasColor);
+    setEl("conf-num", a.confidence + "%", confColor);
+
+    const confBar = document.getElementById("conf-bar");
+    confBar.style.width = a.confidence + "%";
+    confBar.style.background = confColor;
+
+    setEl("r-mode", MODE === "scalp" ? "⚡ Scalping M5" : "🏆 Swing H1");
+    setEl("r-harga", lp, "#facc15");
+    setEl("r-trend", trend, trend === "BULLISH" ? "#22c55e" : "#ef4444");
+    setEl("r-ema20", ema20?.toFixed(2) || "—");
+    setEl("r-ema50", ema50?.toFixed(2) || "—");
+    setEl("r-ema200", ema200?.toFixed(2) || "N/A");
+    setEl("r-rsi", rsi?.toFixed(1) || "—", rsi < 35 ? "#22c55e" : rsi > 65 ? "#ef4444" : "#facc15");
+    setEl("r-bos", bos, bos === "Bullish" ? "#22c55e" : bos === "Bearish" ? "#ef4444" : "#64748b");
+    setEl("r-reject", rejection, rejection === "Bullish" ? "#22c55e" : rejection === "Bearish" ? "#ef4444" : "#64748b");
+    setEl("r-entry", parseFloat(a.entry).toFixed(2));
+    setEl("r-sl", parseFloat(a.sl).toFixed(2), slc);
+    setEl("r-tp1", parseFloat(a.tp1).toFixed(2) + pts(a.tp1, lp), tpc);
+    setEl("r-tp2", parseFloat(a.tp2).toFixed(2) + pts(a.tp2, lp), tpc);
+    setEl("r-tp3", parseFloat(a.tp3).toFixed(2) + pts(a.tp3, lp), tpc);
+    setEl("r-rr", "1 : " + parseFloat(a.rr_ratio || 2).toFixed(1));
+    setEl("r-sesi", ind.session);
+
+    setEl("r-res1", parseFloat(a.resistance1 || 0).toFixed(2));
+    setEl("r-res2", parseFloat(a.resistance2 || 0).toFixed(2));
+    setEl("r-sup1", parseFloat(a.support1 || 0).toFixed(2));
+    setEl("r-sup2", parseFloat(a.support2 || 0).toFixed(2));
+
+    // Indicator bars
+    document.getElementById("ind-bars").innerHTML = [
+      ["RSI(14)", a.rsi_status],
+      ["EMA Cross", a.ema_cross],
+      ["MACD", a.macd_status],
+      ["Momentum", a.momentum],
+    ].map(([label, val]) => `
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:12px">
+          <span style="color:#94a3b8">${label}</span>
+          <span style="color:${indColor(val)};font-weight:700">${(val||"—").replace(/_/g," ")}</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${indPct(val)}%;background:${indColor(val)}"></div></div>
+      </div>`).join("");
+
+    // Narasi
+    document.getElementById("narasi-wrap").innerHTML = [
+      ["💡 Alasan", a.alasan, "#facc15"],
+      ["📌 Strategi", a.strategi, "#22c55e"],
+      ["⚠ Warning", a.warning, "#fb923c"],
+    ].map(([label, text, color]) => `
+      <div class="narasi" style="background:#1e293b;border-left:3px solid ${color};margin-top:8px">
+        <div style="color:${color};font-size:11px;font-weight:700;margin-bottom:3px">${label}</div>
+        <div style="color:#cbd5e1;font-size:13px;line-height:1.5">${text || "—"}</div>
+      </div>`).join("");
+
+    setEl("footer-price", lp);
+
+    // Auto refresh
+    clearInterval(autoTimer);
+    autoTimer = setInterval(runAnalisa, 60000);
+
+  } catch(e) {
+    document.getElementById("loading-card").style.display = "none";
+    document.getElementById("error-card").style.display = "block";
+    document.getElementById("error-msg").textContent = "❌ Error: " + e.message;
+    document.getElementById("dot").className = "dot loading";
+  }
+
+  const btn2 = document.querySelector("#run");
+  if (btn2) { btn2.disabled = false; btn2.innerHTML = "🎯 ANALISA SEKARANG"; }
+}
+
+// Boot
+runAnalisa();
+</script>
+</body>
+</html>
