@@ -100,23 +100,32 @@
     gap:12px;
     margin-bottom:28px;
   }
-  @media (max-width:900px){ .stats{grid-template-columns:repeat(2,1fr);} }
+  .stats > .stat{ min-width:0; }
+  @media (max-width:900px){ .stats{grid-template-columns:repeat(2, minmax(0,1fr));} }
 
   .stat{
     background:var(--panel);
     border:1px solid var(--line);
     border-radius:var(--radius);
-    padding:16px 18px;
+    padding:14px 16px;
     position:relative;
+    min-width:0;
+    overflow:hidden;
   }
   .stat .label{
     font-size:10px; text-transform:uppercase; letter-spacing:.1em;
     color:var(--muted); margin-bottom:8px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
   .stat .value{
     font-family:'JetBrains Mono', monospace;
-    font-size:22px; font-weight:700;
+    font-size: clamp(13px, 4.2vw, 20px);
+    font-weight:700;
+    white-space:nowrap;
+    overflow-x:auto;
+    scrollbar-width:none;
   }
+  .stat .value::-webkit-scrollbar{display:none;}
   .stat .value.pos{color:var(--up);}
   .stat .value.neg{color:var(--down);}
   .stat .value.neutral{color:var(--accent);}
@@ -492,6 +501,13 @@ function fmtRupiah(n){
   return sign + 'Rp' + intPart + '.' + parts[1];
 }
 
+function fmtRupiahShort(n){
+  const sign = n < 0 ? '-' : '';
+  const abs = Math.round(Math.abs(n));
+  const intPart = abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return sign + 'Rp' + intPart;
+}
+
 function fmtDate(d){
   if(!d) return '-';
   const dt = new Date(d + 'T00:00:00');
@@ -596,9 +612,9 @@ function renderStats(s){
     { label:'Profit Factor', value: isFinite(s.profitFactor) ? s.profitFactor.toFixed(2) : '∞', cls: s.profitFactor>=1.5?'pos':(s.profitFactor>0?'neutral':'neg') },
   ];
   if(s.modal > 0){
-    items.push({ label:'Profit (Rp)', value: fmtRupiah(s.profitRp), cls: s.profitRp>=0?'pos':'neg' });
-    items.push({ label:'Total Komisi', value: fmtRupiah(s.totalKomisi), cls: 'neutral' });
-    items.push({ label:'Modal Akhir', value: fmtRupiah(s.modal + s.profitRp), cls:'neutral' });
+    items.push({ label:'Profit (Rp)', value: fmtRupiahShort(s.profitRp), cls: s.profitRp>=0?'pos':'neg' });
+    items.push({ label:'Total Komisi', value: fmtRupiahShort(s.totalKomisi), cls: 'neutral' });
+    items.push({ label:'Modal Akhir', value: fmtRupiahShort(s.modal + s.profitRp), cls:'neutral' });
   }
   grid.innerHTML = items.map(it=>`
     <div class="stat">
@@ -711,7 +727,7 @@ function renderConclusion(s){
 
   let ddText, ddColor;
   if(s.modal > 0){
-    ddText = `${s.ddPercent.toFixed(1)}% (${fmtRupiah(s.ddRp)}) — ${s.ddPercent <= 20 ? 'aman' : 'bahaya'}`;
+    ddText = `${s.ddPercent.toFixed(1)}% (${fmtRupiahShort(s.ddRp)}) — ${s.ddPercent <= 20 ? 'aman' : 'bahaya'}`;
     ddColor = s.ddPercent <= 20 ? 'var(--up)' : 'var(--down)';
   } else {
     ddText = 'isi modal awal untuk hitung %';
