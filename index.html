@@ -33,6 +33,7 @@
     font-family:'Space Grotesk', sans-serif;
     min-height:100vh;
     padding: 32px 20px 80px;
+    overflow-x:hidden;
   }
 
   .mono{font-family:'JetBrains Mono', monospace;}
@@ -149,9 +150,16 @@
     align-items:end;
   }
   @media (max-width:900px){
-    .trade-form{grid-template-columns:repeat(2,1fr);}
+    .trade-form{grid-template-columns:repeat(2, minmax(0,1fr));}
+    .trade-form .f{min-width:0;}
+    .trade-form input, .trade-form select{width:100%; min-width:0;}
+    .trade-form button{grid-column: 1 / -1; width:100%;}
   }
-  .trade-form .f{display:flex; flex-direction:column; gap:6px;}
+  @media (max-width:480px){
+    .trade-form{grid-template-columns: 1fr;}
+    .trade-form button{grid-column: auto;}
+  }
+  .trade-form .f{display:flex; flex-direction:column; gap:6px; min-width:0;}
   .trade-form label{font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted);}
   .trade-form input, .trade-form select{
     background:var(--bg);
@@ -163,6 +171,9 @@
     font-size:13px;
     outline:none;
     transition:border-color .15s;
+    width:100%;
+    min-width:0;
+    box-sizing:border-box;
   }
   .trade-form input:focus, .trade-form select:focus{border-color:var(--accent);}
   .trade-form select{cursor:pointer;}
