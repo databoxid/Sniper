@@ -1,324 +1,660 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Jurnal Backtest Trading</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: #121212;
-            color: #e0e0e0;
-            margin: 0;
-            padding: 12px;
-        }
-        .container {
-            max-width: 600px;
-            margin: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .card {
-            background-color: #1e1e1e;
-            padding: 16px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-        }
-        h2 { 
-            margin: 5px 0 15px 0; 
-            color: #bb86fc; 
-            font-size: 1.3rem; 
-            text-align: center;
-        }
-        h3 { 
-            margin-top: 0; 
-            margin-bottom: 12px; 
-            color: #bb86fc; 
-            font-size: 1rem; 
-            border-bottom: 1px solid #2a2a2a;
-            padding-bottom: 8px;
-        }
-        
-        .form-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 15px;
-        }
-        .form-row {
-            display: flex;
-            gap: 10px;
-        }
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            flex: 1;
-        }
-        label { font-size: 0.8rem; color: #a0a0a0; }
-        
-        input, select {
-            padding: 12px;
-            background-color: #2a2a2a;
-            border: 1px solid #3c3c3c;
-            color: #fff;
-            border-radius: 8px;
-            font-size: 1rem;
-            width: 100%;
-        }
-        input:focus, select:focus { outline: none; border-color: #bb86fc; }
-        
-        button {
-            background-color: #bb86fc;
-            color: #000;
-            font-weight: bold;
-            border: none;
-            padding: 14px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            width: 100%;
-        }
-        button:active { background-color: #9965f4; transform: scale(0.98); }
-        
-        .btn-secondary {
-            background-color: #333;
-            color: #fff;
-            padding: 12px;
-            width: auto;
-            white-space: nowrap;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jurnal Backtest</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
-        .summary-box {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            background-color: #2a2a2a;
-            padding: 12px;
-            border-radius: 8px;
-        }
-        .summary-stats {
-            display: flex;
-            justify-content: space-around;
-            border-top: 1px solid #3c3c3c;
-            padding-top: 10px;
-            margin-top: 5px;
-        }
-        .summary-item { text-align: center; }
-        .summary-value { font-size: 1.1rem; font-weight: bold; margin-top: 4px; }
+  :root{
+    --bg: #0d1117;
+    --panel: #131a24;
+    --panel-2: #171f2b;
+    --line: #232d3b;
+    --text: #e6edf3;
+    --muted: #7d8b9c;
+    --up: #3fd68e;
+    --up-dim: #1c3a30;
+    --down: #f0556b;
+    --down-dim: #3a1c24;
+    --accent: #eab54a;
+    --radius: 10px;
+  }
 
-        .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 5px;
-            min-width: 500px;
-        }
-        th, td {
-            padding: 10px 8px;
-            text-align: left;
-            border-bottom: 1px solid #2a2a2a;
-            font-size: 0.82rem;
-        }
-        th { background-color: #2a2a2a; color: #bb86fc; }
-        .win { color: #4caf50; font-weight: bold; }
-        .loss { color: #f44336; font-weight: bold; }
-    </style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(63,214,142,0.06), transparent),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(240,85,107,0.05), transparent),
+      var(--bg);
+    color:var(--text);
+    font-family:'Space Grotesk', sans-serif;
+    min-height:100vh;
+    padding: 32px 20px 80px;
+  }
+
+  .mono{font-family:'JetBrains Mono', monospace;}
+
+  .wrap{max-width:1080px;margin:0 auto;}
+
+  /* ---------- HEADER ---------- */
+  header{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    flex-wrap:wrap; gap:16px;
+    margin-bottom:28px;
+    padding-bottom:20px;
+    border-bottom:1px solid var(--line);
+  }
+  .brand-eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--muted); margin:0 0 6px;
+  }
+  h1{font-size:28px; font-weight:700; margin:0; letter-spacing:-0.01em;}
+  .clock{
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px; color:var(--muted);
+    text-align:right;
+  }
+  .clock span{color:var(--text); font-weight:600;}
+
+  /* ---------- IDENTITAS BAR ---------- */
+  .identity{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap:0;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    margin-bottom:24px;
+    overflow:hidden;
+  }
+  .identity .field{
+    padding:14px 18px;
+    border-right:1px solid var(--line);
+  }
+  .identity .field:last-child{border-right:none;}
+  .identity label{
+    display:block; font-size:10px; text-transform:uppercase; letter-spacing:.12em;
+    color:var(--muted); margin-bottom:6px;
+  }
+  .identity input{
+    width:100%; background:transparent; border:none; outline:none;
+    color:var(--text); font-family:'JetBrains Mono', monospace; font-size:14px; font-weight:600;
+    padding:0;
+  }
+  .identity input::placeholder{color:#3f4c5c;}
+
+  @media (max-width:800px){
+    .identity{grid-template-columns:repeat(2,1fr);}
+    .identity .field:nth-child(2){border-right:none;}
+  }
+
+  /* ---------- STAT GRID ---------- */
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(150px,1fr));
+    gap:12px;
+    margin-bottom:28px;
+  }
+  @media (max-width:900px){ .stats{grid-template-columns:repeat(2,1fr);} }
+
+  .stat{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px 18px;
+    position:relative;
+  }
+  .stat .label{
+    font-size:10px; text-transform:uppercase; letter-spacing:.1em;
+    color:var(--muted); margin-bottom:8px;
+  }
+  .stat .value{
+    font-family:'JetBrains Mono', monospace;
+    font-size:22px; font-weight:700;
+  }
+  .stat .value.pos{color:var(--up);}
+  .stat .value.neg{color:var(--down);}
+  .stat .value.neutral{color:var(--accent);}
+  .stat .sub{font-size:11px; color:var(--muted); margin-top:4px; font-family:'JetBrains Mono', monospace;}
+
+  /* ---------- SECTION ---------- */
+  .section{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    margin-bottom:24px;
+    overflow:hidden;
+  }
+  .section-head{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:16px 20px;
+    border-bottom:1px solid var(--line);
+    background:var(--panel-2);
+  }
+  .section-head h2{
+    font-size:14px; margin:0; text-transform:uppercase; letter-spacing:.08em; font-weight:600;
+    color:var(--text);
+  }
+  .section-body{padding:20px;}
+
+  /* ---------- FORM INPUT TRADE ---------- */
+  .trade-form{
+    display:grid;
+    grid-template-columns: 1.1fr .8fr 1fr 1fr .9fr auto;
+    gap:10px;
+    align-items:end;
+  }
+  @media (max-width:900px){
+    .trade-form{grid-template-columns:repeat(2,1fr);}
+  }
+  .trade-form .f{display:flex; flex-direction:column; gap:6px;}
+  .trade-form label{font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted);}
+  .trade-form input, .trade-form select{
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:9px 10px;
+    color:var(--text);
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+    outline:none;
+    transition:border-color .15s;
+  }
+  .trade-form input:focus, .trade-form select:focus{border-color:var(--accent);}
+  .trade-form select{cursor:pointer;}
+
+  .btn{
+    border:none; border-radius:7px; padding:9px 16px;
+    font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:13px;
+    cursor:pointer; transition:transform .1s, opacity .15s;
+  }
+  .btn:active{transform:scale(0.97);}
+  .btn-primary{background:var(--accent); color:#1a1305;}
+  .btn-primary:hover{opacity:.9;}
+  .btn-ghost{
+    background:transparent; border:1px solid var(--line); color:var(--muted);
+  }
+  .btn-ghost:hover{color:var(--text); border-color:var(--muted);}
+  .btn-danger-text{
+    background:transparent; border:none; color:var(--down);
+    font-family:'JetBrains Mono',monospace; font-size:12px; cursor:pointer; padding:4px 8px;
+  }
+  .btn-danger-text:hover{text-decoration:underline;}
+
+  /* ---------- TABLE ---------- */
+  table{width:100%; border-collapse:collapse; font-family:'JetBrains Mono', monospace; font-size:13px;}
+  thead th{
+    text-align:left; padding:10px 12px;
+    font-size:10px; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--muted); border-bottom:1px solid var(--line);
+    font-weight:600;
+  }
+  tbody td{padding:11px 12px; border-bottom:1px solid var(--line);}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:rgba(255,255,255,0.015);}
+  .tag{
+    display:inline-block; padding:3px 9px; border-radius:5px;
+    font-size:11px; font-weight:700; letter-spacing:.03em;
+  }
+  .tag-buy{background:var(--up-dim); color:var(--up);}
+  .tag-sell{background:var(--down-dim); color:var(--down);}
+  .pip-pos{color:var(--up); font-weight:600;}
+  .pip-neg{color:var(--down); font-weight:600;}
+  .empty-row td{
+    text-align:center; padding:36px 12px; color:var(--muted);
+    font-family:'Space Grotesk', sans-serif; font-size:13px;
+  }
+
+  .table-scroll{overflow-x:auto;}
+  .total-row{
+    display:flex; justify-content:flex-end; gap:8px;
+    padding:14px 20px; border-top:1px solid var(--line);
+    font-family:'JetBrains Mono', monospace; font-size:13px;
+    background:var(--panel-2);
+  }
+  .total-row .num{font-weight:700; font-size:15px;}
+
+  /* ---------- KESIMPULAN ---------- */
+  .conclusion-grid{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:16px;
+  }
+  @media (max-width:800px){.conclusion-grid{grid-template-columns:repeat(2,1fr);}}
+  .conc-item{
+    background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:14px;
+  }
+  .conc-item .k{font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:6px;}
+  .conc-item .v{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:16px;}
+  .stars{color:var(--accent); font-size:18px; letter-spacing:2px;}
+
+  footer{
+    text-align:center; color:var(--muted); font-size:11px; margin-top:40px;
+    font-family:'JetBrains Mono', monospace;
+  }
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+    padding:10px 20px; border-radius:8px; font-size:13px;
+    opacity:0; pointer-events:none; transition:all .25s;
+    font-family:'JetBrains Mono', monospace;
+    z-index:50;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  .loading-dot{
+    display:inline-block; width:6px; height:6px; border-radius:50%;
+    background:var(--accent); margin-right:8px; animation:pulse 1.2s infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:.3;} 50%{opacity:1;}}
+</style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Backtest Trading Manual</h2>
+<div class="wrap">
 
-    <!-- Ringkasan Portofolio -->
-    <div class="card">
-        <div class="summary-box">
-            <div class="form-group">
-                <label>Saldo Awal / Modal (Rp)</label>
-                <div style="display: flex; gap: 8px;">
-                    <input type="number" id="initialBalanceInput" value="1000000" inputmode="numeric" placeholder="Contoh: 1000000">
-                    <button class="btn-secondary" onclick="updateInitialBalance()">Set Saldo</button>
-                </div>
-            </div>
-            
-            <div class="summary-stats">
-                <div class="summary-item">
-                    <label>Saldo Saat Ini</label>
-                    <div id="displaySaldo" class="summary-value" style="color: #03dac6;">Rp 1.000.000</div>
-                </div>
-                <div class="summary-item">
-                    <label>Total Trade</label>
-                    <div id="displayTotal" class="summary-value">0</div>
-                </div>
-                <div class="summary-item">
-                    <label>Win Rate</label>
-                    <div id="displayWinRate" class="summary-value">0%</div>
-                </div>
-            </div>
-        </div>
+  <header>
+    <div>
+      <p class="brand-eyebrow">Jurnal Backtest &mdash; Trading Log</p>
+      <h1 id="pairTitle">Pair Belum Diisi</h1>
     </div>
-
-    <!-- Form Input Trade -->
-    <div class="card">
-        <h3>Input Data Backtest</h3>
-        <div class="form-grid">
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Tanggal</label>
-                    <input type="date" id="tradeDate">
-                </div>
-                <div class="form-group">
-                    <label>Harga Entry</label>
-                    <input type="number" id="entryPrice" step="any" inputmode="decimal" placeholder="0">
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Harga TP</label>
-                    <input type="number" id="tpPrice" step="any" inputmode="decimal" placeholder="0">
-                </div>
-                <div class="form-group">
-                    <label>Harga SL</label>
-                    <input type="number" id="slPrice" step="any" inputmode="decimal" placeholder="0">
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Hasil Eksekusi</label>
-                    <select id="tradeResult">
-                        <option value="TP">Kena TP (Win)</option>
-                        <option value="SL">Kena SL (Loss)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Nominal Profit/Loss (Rp)</label>
-                    <input type="number" id="pnlAmountInput" inputmode="numeric" placeholder="Contoh: 200000">
-                </div>
-            </div>
-        </div>
-        <button onclick="addTrade()">Tambah ke Jurnal</button>
+    <div class="clock mono" id="statusLine">
+      <span class="loading-dot"></span>memuat data...
     </div>
+  </header>
 
-    <!-- Tabel Riwayat Trade -->
-    <div class="card">
-        <h3>Riwayat Backtest</h3>
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Tanggal</th>
-                        <th>Entry</th>
-                        <th>Status</th>
-                        <th>Nominal PnL</th>
-                        <th>Saldo Akhir</th>
-                    </tr>
-                </thead>
-                <tbody id="tradeTableBody">
-                    <!-- Data dari JS -->
-                </tbody>
-            </table>
-        </div>
+  <!-- IDENTITAS -->
+  <div class="identity">
+    <div class="field">
+      <label>Pair</label>
+      <input type="text" id="in-pair" placeholder="XAUUSD" oninput="onIdentityChange()">
     </div>
+    <div class="field">
+      <label>Periode Mulai</label>
+      <input type="date" id="in-start" onchange="onIdentityChange()">
+    </div>
+    <div class="field">
+      <label>Periode Selesai</label>
+      <input type="date" id="in-end" onchange="onIdentityChange()">
+    </div>
+    <div class="field">
+      <label>Modal Awal (Rp)</label>
+      <input type="text" inputmode="decimal" id="in-modal" placeholder="10.000.000" oninput="onIdentityChange()">
+    </div>
+  </div>
+
+  <!-- STATISTIK INTI -->
+  <div class="stats" id="statsGrid"></div>
+
+  <!-- INPUT TRADE -->
+  <div class="section">
+    <div class="section-head">
+      <h2>Input Trade</h2>
+      <span class="mono" style="font-size:11px;color:var(--muted);" id="tradeCountLabel">0 trade tercatat</span>
+    </div>
+    <div class="section-body">
+      <div class="trade-form">
+        <div class="f">
+          <label>Tanggal</label>
+          <input type="date" id="f-date">
+        </div>
+        <div class="f">
+          <label>Tipe</label>
+          <select id="f-type">
+            <option value="BUY">BUY</option>
+            <option value="SELL">SELL</option>
+          </select>
+        </div>
+        <div class="f">
+          <label>Harga Entry</label>
+          <input type="text" inputmode="decimal" id="f-entry" placeholder="2015.30">
+        </div>
+        <div class="f">
+          <label>Harga Exit</label>
+          <input type="text" inputmode="decimal" id="f-exit" placeholder="2018.10">
+        </div>
+        <div class="f">
+          <label>Profit (pips) — opsional</label>
+          <input type="text" inputmode="decimal" id="f-pips" placeholder="auto jika kosong">
+        </div>
+        <button class="btn btn-primary" onclick="addTrade()">+ Tambah</button>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin:12px 0 0;font-family:'JetBrains Mono',monospace;">
+        Kosongkan kolom "Profit (pips)" untuk hitung otomatis dari selisih Entry–Exit, atau isi manual jika pair punya konversi pip khusus.
+      </p>
+    </div>
+  </div>
+
+  <!-- DAFTAR TRADE -->
+  <div class="section">
+    <div class="section-head">
+      <h2>Daftar Trade</h2>
+      <button class="btn btn-ghost" onclick="clearAll()">Hapus Semua</button>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>No</th><th>Tgl</th><th>Type</th><th>Entry</th><th>Exit</th><th>Profit (pips)</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="tradeBody">
+          <tr class="empty-row"><td colspan="7">Belum ada trade. Tambahkan trade pertama di atas.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="total-row">
+      <span>Total:</span>
+      <span class="num" id="totalPipsLabel">0 pips</span>
+    </div>
+  </div>
+
+  <!-- KESIMPULAN -->
+  <div class="section">
+    <div class="section-head"><h2>Kesimpulan</h2></div>
+    <div class="section-body">
+      <div class="conclusion-grid">
+        <div class="conc-item">
+          <div class="k">Profit</div>
+          <div class="v" id="c-profit">—</div>
+        </div>
+        <div class="conc-item">
+          <div class="k">Win Rate</div>
+          <div class="v" id="c-winrate">—</div>
+        </div>
+        <div class="conc-item">
+          <div class="k">Drawdown</div>
+          <div class="v" id="c-dd">—</div>
+        </div>
+        <div class="conc-item">
+          <div class="k">Rating</div>
+          <div class="v stars" id="c-rating">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Data tersimpan di browser ini (localStorage) &mdash; Jurnal Backtest</footer>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-    let currentBalance = 1000000;
-    let totalTrades = 0;
-    let totalWins = 0;
+let trades = [];
+let identity = { pair:'', start:'', end:'', modal:'' };
+const STORAGE_KEY = 'trades-v1';
+const IDENTITY_KEY = 'identity-v1';
 
-    document.getElementById('tradeDate').valueAsDate = new Date();
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1800);
+}
 
-    function formatRupiah(angka) {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            maximumFractionDigits: 0
-        }).format(angka);
-    }
+function setStatus(msg){
+  document.getElementById('statusLine').innerHTML = msg;
+}
 
-    function updateInitialBalance() {
-        const newBalance = parseFloat(document.getElementById('initialBalanceInput').value);
-        if (isNaN(newBalance) || newBalance <= 0) {
-            alert("Masukkan nilai saldo awal yang valid!");
-            return;
-        }
+function loadAll(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    trades = raw ? JSON.parse(raw) : [];
+  }catch(e){ trades = []; }
+  try{
+    const raw2 = localStorage.getItem(IDENTITY_KEY);
+    identity = raw2 ? JSON.parse(raw2) : identity;
+  }catch(e){}
 
-        currentBalance = newBalance;
-        totalTrades = 0;
-        totalWins = 0;
+  document.getElementById('in-pair').value = identity.pair || '';
+  document.getElementById('in-start').value = identity.start || '';
+  document.getElementById('in-end').value = identity.end || '';
+  document.getElementById('in-modal').value = identity.modal || '';
 
-        document.getElementById('displaySaldo').innerText = formatRupiah(currentBalance);
-        document.getElementById('displayTotal').innerText = '0';
-        document.getElementById('displayWinRate').innerText = '0%';
-        document.getElementById('tradeTableBody').innerHTML = '';
+  setStatus('tersimpan di browser ini');
+  renderAll();
+}
 
-        alert("Saldo berhasil diperbarui!");
-    }
+function saveTrades(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
+  }catch(e){ showToast('Gagal menyimpan data'); }
+}
+function saveIdentity(){
+  try{
+    localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
+  }catch(e){ showToast('Gagal menyimpan identitas'); }
+}
 
-    function addTrade() {
-        const date = document.getElementById('tradeDate').value;
-        const entry = parseFloat(document.getElementById('entryPrice').value);
-        const tp = parseFloat(document.getElementById('tpPrice').value);
-        const sl = parseFloat(document.getElementById('slPrice').value);
-        const result = document.getElementById('tradeResult').value;
-        let pnlAmount = parseFloat(document.getElementById('pnlAmountInput').value);
+function onIdentityChange(){
+  identity = {
+    pair: document.getElementById('in-pair').value.trim(),
+    start: document.getElementById('in-start').value,
+    end: document.getElementById('in-end').value,
+    modal: document.getElementById('in-modal').value
+  };
+  saveIdentity();
+  renderAll();
+}
 
-        if (!date || isNaN(entry) || isNaN(tp) || isNaN(sl) || isNaN(pnlAmount)) {
-            alert("Harap isi Tanggal, Entry, TP, SL, dan Nominal Profit/Loss!");
-            return;
-        }
+function fmtRupiah(n){
+  const sign = n < 0 ? '-' : '';
+  const abs = Math.abs(Math.round(n));
+  return sign + 'Rp' + abs.toLocaleString('id-ID');
+}
 
-        // Jika kena SL, pastikan nilainya minus
-        if (result === 'SL') {
-            pnlAmount = -Math.abs(pnlAmount);
-        } else {
-            pnlAmount = Math.abs(pnlAmount);
-            totalWins++;
-        }
+function fmtDate(d){
+  if(!d) return '-';
+  const dt = new Date(d + 'T00:00:00');
+  if(isNaN(dt)) return d;
+  const opts = {day:'2-digit', month:'short', year:'numeric'};
+  return dt.toLocaleDateString('id-ID', opts);
+}
 
-        // Tambahkan ke saldo utama
-        currentBalance += pnlAmount;
-        totalTrades++;
+function addTrade(){
+  const date = document.getElementById('f-date').value;
+  const type = document.getElementById('f-type').value;
+  const entry = parseFloat(document.getElementById('f-entry').value);
+  const exit = parseFloat(document.getElementById('f-exit').value);
+  const pipsRaw = document.getElementById('f-pips').value;
 
-        // Update Ringkasan Dashboard
-        document.getElementById('displaySaldo').innerText = formatRupiah(currentBalance);
-        document.getElementById('displayTotal').innerText = totalTrades;
-        document.getElementById('displayWinRate').innerText = ((totalWins / totalTrades) * 100).toFixed(1) + '%';
+  if(!date || isNaN(entry) || isNaN(exit)){
+    showToast('Isi tanggal, entry, dan exit dulu');
+    return;
+  }
 
-        // Tambahkan ke Tabel
-        const tableBody = document.getElementById('tradeTableBody');
-        const row = document.createElement('tr');
+  let pips;
+  if(pipsRaw !== ''){
+    pips = parseFloat(pipsRaw);
+  } else {
+    pips = type === 'BUY' ? (exit - entry) : (entry - exit);
+  }
 
-        const statusClass = result === 'TP' ? 'win' : 'loss';
-        const pnlPrefix = pnlAmount >= 0 ? '+' : '';
-        const pnlFormatted = `${pnlPrefix}${formatRupiah(pnlAmount)}`;
+  trades.push({ date, type, entry, exit, pips });
+  trades.sort((a,b)=> new Date(a.date) - new Date(b.date));
 
-        row.innerHTML = `
-            <td>${date}</td>
-            <td>${entry.toLocaleString('id-ID')}</td>
-            <td class="${statusClass}">Kena ${result}</td>
-            <td class="${statusClass}">${pnlFormatted}</td>
-            <td style="font-weight: bold;">${formatRupiah(currentBalance)}</td>
-        `;
+  document.getElementById('f-date').value = '';
+  document.getElementById('f-entry').value = '';
+  document.getElementById('f-exit').value = '';
+  document.getElementById('f-pips').value = '';
 
-        tableBody.insertBefore(row, tableBody.firstChild);
+  saveTrades();
+  renderAll();
+  showToast('Trade ditambahkan');
+}
 
-        // Reset input harga & profit
-        document.getElementById('entryPrice').value = '';
-        document.getElementById('tpPrice').value = '';
-        document.getElementById('slPrice').value = '';
-        document.getElementById('pnlAmountInput').value = '';
-    }
+function removeTrade(idx){
+  trades.splice(idx,1);
+  saveTrades();
+  renderAll();
+}
+
+function clearAll(){
+  if(!confirm('Hapus semua trade? Tindakan ini tidak bisa dibatalkan.')) return;
+  trades = [];
+  saveTrades();
+  renderAll();
+  showToast('Semua trade dihapus');
+}
+
+function computeStats(){
+  const total = trades.length;
+  const wins = trades.filter(t=>t.pips > 0);
+  const losses = trades.filter(t=>t.pips < 0);
+  const totalPips = trades.reduce((s,t)=>s+t.pips,0);
+  const winRate = total ? (wins.length/total*100) : 0;
+
+  const grossProfit = wins.reduce((s,t)=>s+t.pips,0);
+  const grossLoss = Math.abs(losses.reduce((s,t)=>s+t.pips,0));
+  const profitFactor = grossLoss > 0 ? (grossProfit/grossLoss) : (grossProfit>0 ? Infinity : 0);
+
+  const best = total ? Math.max(...trades.map(t=>t.pips)) : 0;
+  const worst = total ? Math.min(...trades.map(t=>t.pips)) : 0;
+
+  // equity curve & max drawdown (dalam pips, lalu dikonversi ke % jika modal ada)
+  let equity = 0, peak = 0, maxDD = 0;
+  trades.forEach(t=>{
+    equity += t.pips;
+    if(equity > peak) peak = equity;
+    const dd = peak - equity;
+    if(dd > maxDD) maxDD = dd;
+  });
+
+  const modalRaw = document.getElementById('in-modal').value;
+  const modal = parseFloat((modalRaw||'').replace(/[^0-9.-]/g,'')) || 0;
+  // asumsi 1 pip = 1 unit nilai relatif terhadap modal jika tidak ada info lot; gunakan totalPips sbg proxy %.
+  const profitPercent = modal > 0 ? (totalPips/modal*100) : 0;
+  const ddPercent = modal > 0 ? (maxDD/modal*100) : 0;
+  const profitRp = modal > 0 ? (modal * profitPercent / 100) : 0;
+  const ddRp = modal > 0 ? (modal * ddPercent / 100) : 0;
+
+  return { total, wins:wins.length, losses:losses.length, winRate, totalPips, profitFactor, best, worst, profitPercent, ddPercent, modal, profitRp, ddRp };
+}
+
+function renderStats(s){
+  const grid = document.getElementById('statsGrid');
+  const items = [
+    { label:'Total Trade', value: s.total, cls:'neutral' },
+    { label:'Win / Loss', value: `${s.wins} / ${s.losses}`, cls:'neutral' },
+    { label:'Win Rate', value: s.total ? s.winRate.toFixed(1)+'%' : '—', cls: s.winRate>=50?'pos':'neg' },
+    { label:'Total Profit', value: (s.totalPips>=0?'+':'')+s.totalPips.toFixed(1)+' pips', cls: s.totalPips>=0?'pos':'neg' },
+    { label:'Profit Factor', value: isFinite(s.profitFactor) ? s.profitFactor.toFixed(2) : '∞', cls: s.profitFactor>=1.5?'pos':(s.profitFactor>0?'neutral':'neg') },
+  ];
+  if(s.modal > 0){
+    items.push({ label:'Profit (Rp)', value: fmtRupiah(s.profitRp), cls: s.profitRp>=0?'pos':'neg' });
+    items.push({ label:'Modal Akhir', value: fmtRupiah(s.modal + s.profitRp), cls:'neutral' });
+  }
+  grid.innerHTML = items.map(it=>`
+    <div class="stat">
+      <div class="label">${it.label}</div>
+      <div class="value ${it.cls}">${it.value}</div>
+    </div>
+  `).join('');
+}
+
+function renderTable(){
+  const body = document.getElementById('tradeBody');
+  document.getElementById('tradeCountLabel').textContent = `${trades.length} trade tercatat`;
+
+  if(trades.length === 0){
+    body.innerHTML = `<tr class="empty-row"><td colspan="7">Belum ada trade. Tambahkan trade pertama di atas.</td></tr>`;
+    document.getElementById('totalPipsLabel').textContent = '0 pips';
+    return;
+  }
+
+  body.innerHTML = trades.map((t, idx)=>{
+    const pipsCls = t.pips >= 0 ? 'pip-pos' : 'pip-neg';
+    const tagCls = t.type === 'BUY' ? 'tag-buy' : 'tag-sell';
+    return `
+      <tr>
+        <td>${idx+1}</td>
+        <td>${fmtDate(t.date)}</td>
+        <td><span class="tag ${tagCls}">${t.type}</span></td>
+        <td>${t.entry}</td>
+        <td>${t.exit}</td>
+        <td class="${pipsCls}">${t.pips>=0?'+':''}${t.pips.toFixed(1)}</td>
+        <td><button class="btn-danger-text" onclick="removeTrade(${idx})">Hapus</button></td>
+      </tr>
+    `;
+  }).join('');
+
+  const total = trades.reduce((s,t)=>s+t.pips,0);
+  const totalEl = document.getElementById('totalPipsLabel');
+  totalEl.textContent = `${total>=0?'+':''}${total.toFixed(1)} pips`;
+  totalEl.style.color = total>=0 ? 'var(--up)' : 'var(--down)';
+}
+
+function renderConclusion(s){
+  const cProfit = document.getElementById('c-profit');
+  const cWinrate = document.getElementById('c-winrate');
+  const cDD = document.getElementById('c-dd');
+  const cRating = document.getElementById('c-rating');
+
+  if(s.total === 0){
+    cProfit.textContent = '—'; cProfit.className='v';
+    cWinrate.textContent = '—'; cWinrate.className='v';
+    cDD.textContent = '—'; cDD.className='v';
+    cRating.textContent = '—';
+    return;
+  }
+
+  const isProfit = s.totalPips > 0;
+  cProfit.textContent = isProfit ? 'Ya' : 'Tidak';
+  cProfit.className = 'v ' + (isProfit ? '' : '');
+  cProfit.style.color = isProfit ? 'var(--up)' : 'var(--down)';
+
+  let wrLabel = s.winRate >= 60 ? 'bagus' : (s.winRate >= 45 ? 'cukup' : 'jelek');
+  cWinrate.textContent = `${s.winRate.toFixed(1)}% — ${wrLabel}`;
+  cWinrate.style.color = s.winRate>=60 ? 'var(--up)' : (s.winRate>=45 ? 'var(--accent)' : 'var(--down)');
+
+  let ddText, ddColor;
+  if(s.modal > 0){
+    ddText = `${s.ddPercent.toFixed(1)}% (${fmtRupiah(s.ddRp)}) — ${s.ddPercent <= 20 ? 'aman' : 'bahaya'}`;
+    ddColor = s.ddPercent <= 20 ? 'var(--up)' : 'var(--down)';
+  } else {
+    ddText = 'isi modal awal untuk hitung %';
+    ddColor = 'var(--muted)';
+  }
+  cDD.textContent = ddText;
+  cDD.style.color = ddColor;
+
+  // rating berdasarkan kombinasi win rate, profit factor, drawdown
+  let score = 0;
+  if(s.winRate >= 60) score += 2; else if(s.winRate >= 45) score += 1;
+  if(s.profitFactor >= 2) score += 2; else if(s.profitFactor >= 1.2) score += 1;
+  if(s.modal > 0){
+    if(s.ddPercent <= 15) score += 1;
+    if(s.ddPercent > 30) score -= 1;
+  }
+  if(isProfit) score += 1; else score -= 1;
+
+  let stars = '⭐⭐⭐';
+  if(score >= 5) stars = '⭐⭐⭐⭐⭐';
+  else if(score >= 3) stars = '⭐⭐⭐⭐';
+  else if(score < 1) stars = '⭐⭐';
+  cRating.textContent = stars;
+}
+
+function renderAll(){
+  document.getElementById('pairTitle').textContent = identity.pair ? identity.pair.toUpperCase() : 'Pair Belum Diisi';
+  const s = computeStats();
+  renderStats(s);
+  renderTable();
+  renderConclusion(s);
+
+  if(identity.start && identity.end){
+    const d1 = new Date(identity.start), d2 = new Date(identity.end);
+    const days = Math.round((d2-d1)/(1000*60*60*24));
+    setStatus(`<span class="mono">${days>=0?days:0} hari</span> &middot; ${trades.length} trade`);
+  } else {
+    setStatus(`${trades.length} trade &middot; tersimpan lokal`);
+  }
+}
+
+loadAll();
 </script>
 
 </body>
