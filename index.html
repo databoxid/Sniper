@@ -197,6 +197,28 @@
   .btn-danger-text:hover{text-decoration:underline;}
 
   /* ---------- TABLE ---------- */
+  .filter-tabs{
+    display:flex; gap:8px;
+    padding:14px 20px 0;
+  }
+  .filter-tab{
+    background:var(--bg);
+    border:1px solid var(--line);
+    color:var(--muted);
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px; font-weight:600;
+    padding:7px 14px;
+    border-radius:7px;
+    cursor:pointer;
+    transition:all .15s;
+  }
+  .filter-tab:hover{color:var(--text); border-color:var(--muted);}
+  .filter-tab.active{
+    background:var(--accent); color:#1a1305; border-color:var(--accent);
+  }
+  .filter-tab[data-filter="profit"].active{background:var(--up); border-color:var(--up); color:#06231a;}
+  .filter-tab[data-filter="loss"].active{background:var(--down); border-color:var(--down); color:#2a0810;}
+
   table{width:100%; border-collapse:collapse; font-family:'JetBrains Mono', monospace; font-size:13px;}
   thead th{
     text-align:left; padding:10px 12px;
@@ -331,10 +353,14 @@
           <label>Profit (pips) — opsional</label>
           <input type="text" inputmode="decimal" id="f-pips" placeholder="auto jika kosong">
         </div>
+        <div class="f">
+          <label>Komisi (Rp)</label>
+          <input type="text" inputmode="decimal" id="f-komisi" placeholder="0">
+        </div>
         <button class="btn btn-primary" onclick="addTrade()">+ Tambah</button>
       </div>
       <p style="font-size:11px;color:var(--muted);margin:12px 0 0;font-family:'JetBrains Mono',monospace;">
-        Kosongkan kolom "Profit (pips)" untuk hitung otomatis dari selisih Entry–Exit, atau isi manual jika pair punya konversi pip khusus.
+        Kosongkan kolom "Profit (pips)" untuk hitung otomatis dari selisih Entry–Exit, atau isi manual jika pair punya konversi pip khusus. Komisi akan mengurangi profit bersih tiap trade.
       </p>
     </div>
   </div>
@@ -345,21 +371,27 @@
       <h2>Daftar Trade</h2>
       <button class="btn btn-ghost" onclick="clearAll()">Hapus Semua</button>
     </div>
+    <div class="filter-tabs">
+      <button class="filter-tab active" data-filter="all" onclick="setFilter('all')">Semua</button>
+      <button class="filter-tab" data-filter="profit" onclick="setFilter('profit')">Profit</button>
+      <button class="filter-tab" data-filter="loss" onclick="setFilter('loss')">Loss</button>
+    </div>
     <div class="table-scroll">
       <table>
         <thead>
           <tr>
-            <th>No</th><th>Tgl</th><th>Type</th><th>Entry</th><th>Exit</th><th>Profit (pips)</th><th></th>
+            <th>No</th><th>Tgl</th><th>Type</th><th>Entry</th><th>Exit</th><th>Profit (pips)</th><th>Komisi (Rp)</th><th>Profit Bersih (Rp)</th><th></th>
           </tr>
         </thead>
         <tbody id="tradeBody">
-          <tr class="empty-row"><td colspan="7">Belum ada trade. Tambahkan trade pertama di atas.</td></tr>
+          <tr class="empty-row"><td colspan="9">Belum ada trade. Tambahkan trade pertama di atas.</td></tr>
         </tbody>
       </table>
     </div>
-    <div class="total-row">
-      <span>Total:</span>
-      <span class="num" id="totalPipsLabel">0 pips</span>
+    <div class="total-row" style="flex-direction:column; align-items:flex-end; gap:4px;">
+      <div><span>Total Pips: </span><span class="num" id="totalPipsLabel">0 pips</span></div>
+      <div><span>Total Komisi: </span><span class="num" id="totalKomisiLabel">Rp0</span></div>
+      <div><span>Profit Bersih: </span><span class="num" id="totalNetLabel">Rp0</span></div>
     </div>
   </div>
 
@@ -396,6 +428,7 @@
 <script>
 let trades = [];
 let identity = { pair:'', start:'', end:'', modal:'' };
+let currentFilter = 'all';
 const STORAGE_KEY = 'trades-v1';
 const IDENTITY_KEY = 'identity-v1';
 
@@ -471,6 +504,7 @@ function addTrade(){
   const entry = parseFloat(document.getElementById('f-entry').value);
   const exit = parseFloat(document.getElementById('f-exit').value);
   const pipsRaw = document.getElementById('f-pips').value;
+  const komisiRaw = document.getElementById('f-komisi').value;
 
   if(!date || isNaN(entry) || isNaN(exit)){
     showToast('Isi tanggal, entry, dan exit dulu');
@@ -484,13 +518,16 @@ function addTrade(){
     pips = type === 'BUY' ? (exit - entry) : (entry - exit);
   }
 
-  trades.push({ date, type, entry, exit, pips });
+  const komisi = komisiRaw !== '' ? (parseFloat(komisiRaw.replace(/[^0-9.-]/g,'')) || 0) : 0;
+
+  trades.push({ date, type, entry, exit, pips, komisi });
   trades.sort((a,b)=> new Date(a.date) - new Date(b.date));
 
   document.getElementById('f-date').value = '';
   document.getElementById('f-entry').value = '';
   document.getElementById('f-exit').value = '';
   document.getElementById('f-pips').value = '';
+  document.getElementById('f-komisi').value = '';
 
   saveTrades();
   renderAll();
@@ -536,13 +573,15 @@ function computeStats(){
 
   const modalRaw = document.getElementById('in-modal').value;
   const modal = parseFloat((modalRaw||'').replace(/[^0-9.-]/g,'')) || 0;
+  const totalKomisi = trades.reduce((s,t)=>s+(t.komisi||0),0);
   // asumsi 1 pip = 1 unit nilai relatif terhadap modal jika tidak ada info lot; gunakan totalPips sbg proxy %.
   const profitPercent = modal > 0 ? (totalPips/modal*100) : 0;
   const ddPercent = modal > 0 ? (maxDD/modal*100) : 0;
-  const profitRp = modal > 0 ? (modal * profitPercent / 100) : 0;
+  const profitRpGross = modal > 0 ? (modal * profitPercent / 100) : totalPips;
+  const profitRp = profitRpGross - totalKomisi;
   const ddRp = modal > 0 ? (modal * ddPercent / 100) : 0;
 
-  return { total, wins:wins.length, losses:losses.length, winRate, totalPips, profitFactor, best, worst, profitPercent, ddPercent, modal, profitRp, ddRp };
+  return { total, wins:wins.length, losses:losses.length, winRate, totalPips, profitFactor, best, worst, profitPercent, ddPercent, modal, profitRp, ddRp, totalKomisi };
 }
 
 function renderStats(s){
@@ -556,6 +595,7 @@ function renderStats(s){
   ];
   if(s.modal > 0){
     items.push({ label:'Profit (Rp)', value: fmtRupiah(s.profitRp), cls: s.profitRp>=0?'pos':'neg' });
+    items.push({ label:'Total Komisi', value: fmtRupiah(s.totalKomisi), cls: 'neutral' });
     items.push({ label:'Modal Akhir', value: fmtRupiah(s.modal + s.profitRp), cls:'neutral' });
   }
   grid.innerHTML = items.map(it=>`
@@ -566,36 +606,82 @@ function renderStats(s){
   `).join('');
 }
 
+function setFilter(f){
+  currentFilter = f;
+  document.querySelectorAll('.filter-tab').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.filter === f);
+  });
+  renderTable();
+}
+
 function renderTable(){
   const body = document.getElementById('tradeBody');
   document.getElementById('tradeCountLabel').textContent = `${trades.length} trade tercatat`;
 
   if(trades.length === 0){
-    body.innerHTML = `<tr class="empty-row"><td colspan="7">Belum ada trade. Tambahkan trade pertama di atas.</td></tr>`;
+    body.innerHTML = `<tr class="empty-row"><td colspan="9">Belum ada trade. Tambahkan trade pertama di atas.</td></tr>`;
     document.getElementById('totalPipsLabel').textContent = '0 pips';
+    document.getElementById('totalKomisiLabel').textContent = 'Rp0';
+    document.getElementById('totalNetLabel').textContent = 'Rp0';
     return;
   }
 
-  body.innerHTML = trades.map((t, idx)=>{
+  // pasangkan tiap trade dengan index aslinya di array trades, lalu filter
+  const indexed = trades.map((t, idx)=>({ t, idx }));
+  const filtered = indexed.filter(({t})=>{
+    if(currentFilter === 'profit') return t.pips > 0;
+    if(currentFilter === 'loss') return t.pips < 0;
+    return true;
+  });
+
+  if(filtered.length === 0){
+    const label = currentFilter === 'profit' ? 'profit' : 'loss';
+    body.innerHTML = `<tr class="empty-row"><td colspan="9">Tidak ada trade ${label}.</td></tr>`;
+    document.getElementById('totalPipsLabel').textContent = '0 pips';
+    document.getElementById('totalKomisiLabel').textContent = 'Rp0';
+    document.getElementById('totalNetLabel').textContent = 'Rp0';
+    return;
+  }
+
+  body.innerHTML = filtered.map(({t, idx}, displayNo)=>{
     const pipsCls = t.pips >= 0 ? 'pip-pos' : 'pip-neg';
     const tagCls = t.type === 'BUY' ? 'tag-buy' : 'tag-sell';
+    const komisi = t.komisi || 0;
+    const modalNum = parseFloat((identity.modal||'').toString().replace(/[^0-9.-]/g,'')) || 0;
+    const hasModal = modalNum > 0;
+    // asumsi 1 pip = Rp 1 (konsisten dengan computeStats), lalu dikurangi komisi
+    const grossRp = t.pips;
+    const netRp = grossRp - komisi;
+    const netCls = netRp >= 0 ? 'pip-pos' : 'pip-neg';
     return `
       <tr>
-        <td>${idx+1}</td>
+        <td>${displayNo+1}</td>
         <td>${fmtDate(t.date)}</td>
         <td><span class="tag ${tagCls}">${t.type}</span></td>
         <td>${t.entry}</td>
         <td>${t.exit}</td>
         <td class="${pipsCls}">${t.pips>=0?'+':''}${t.pips.toFixed(1)}</td>
+        <td>${komisi > 0 ? fmtRupiah(komisi) : '-'}</td>
+        <td class="${netCls}">${fmtRupiah(netRp)}</td>
         <td><button class="btn-danger-text" onclick="removeTrade(${idx})">Hapus</button></td>
       </tr>
     `;
   }).join('');
 
-  const total = trades.reduce((s,t)=>s+t.pips,0);
+  const total = filtered.reduce((s,{t})=>s+t.pips,0);
+  const totalKomisi = filtered.reduce((s,{t})=>s+(t.komisi||0),0);
+  const totalNet = total - totalKomisi;
+
   const totalEl = document.getElementById('totalPipsLabel');
   totalEl.textContent = `${total>=0?'+':''}${total.toFixed(1)} pips`;
   totalEl.style.color = total>=0 ? 'var(--up)' : 'var(--down)';
+
+  const komisiEl = document.getElementById('totalKomisiLabel');
+  komisiEl.textContent = fmtRupiah(totalKomisi);
+
+  const netEl = document.getElementById('totalNetLabel');
+  netEl.textContent = fmtRupiah(totalNet);
+  netEl.style.color = totalNet>=0 ? 'var(--up)' : 'var(--down)';
 }
 
 function renderConclusion(s){
