@@ -486,8 +486,10 @@ function onIdentityChange(){
 
 function fmtRupiah(n){
   const sign = n < 0 ? '-' : '';
-  const abs = Math.abs(Math.round(n));
-  return sign + 'Rp' + abs.toLocaleString('id-ID');
+  const abs = Math.abs(n);
+  const parts = abs.toFixed(2).split('.');
+  const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return sign + 'Rp' + intPart + '.' + parts[1];
 }
 
 function fmtDate(d){
