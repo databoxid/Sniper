@@ -187,6 +187,44 @@
   .trade-form input:focus, .trade-form select:focus{border-color:var(--accent);}
   .trade-form select{cursor:pointer;}
 
+  /* ---------- DEPOSIT FORM ---------- */
+  .deposit-form{
+    display:grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap:10px;
+    align-items:end;
+  }
+  @media (max-width:600px){
+    .deposit-form{grid-template-columns: 1fr;}
+  }
+  .deposit-form .f{display:flex; flex-direction:column; gap:6px; min-width:0;}
+  .deposit-form label{font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted);}
+  .deposit-form input{
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:9px 10px;
+    color:var(--text);
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+    outline:none;
+    width:100%;
+    box-sizing:border-box;
+  }
+  .deposit-form input:focus{border-color:var(--accent);}
+
+  .deposit-item{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:7px;
+    margin-bottom:8px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+  }
+  .deposit-item .amt{color:var(--up); font-weight:700;}
+  .deposit-empty{color:var(--muted); font-size:12px; font-family:'JetBrains Mono', monospace;}
+
   .btn{
     border:none; border-radius:7px; padding:9px 16px;
     font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:13px;
@@ -328,6 +366,28 @@
     </div>
   </div>
 
+  <!-- DEPOSIT -->
+  <div class="section">
+    <div class="section-head">
+      <h2>Deposit Tambahan</h2>
+      <span class="mono" style="font-size:11px;color:var(--muted);" id="depositCountLabel">0 deposit</span>
+    </div>
+    <div class="section-body">
+      <div class="deposit-form">
+        <div class="f">
+          <label>Tanggal</label>
+          <input type="date" id="d-date">
+        </div>
+        <div class="f">
+          <label>Jumlah Deposit (Rp)</label>
+          <input type="text" inputmode="decimal" id="d-amount" placeholder="500000">
+        </div>
+        <button class="btn btn-primary" onclick="addDeposit()">+ Tambah Deposit</button>
+      </div>
+      <div id="depositList" style="margin-top:14px;"></div>
+    </div>
+  </div>
+
   <!-- STATISTIK INTI -->
   <div class="stats" id="statsGrid"></div>
 
@@ -436,10 +496,12 @@
 
 <script>
 let trades = [];
+let deposits = [];
 let identity = { pair:'', start:'', end:'', modal:'' };
 let currentFilter = 'all';
 const STORAGE_KEY = 'trades-v1';
 const IDENTITY_KEY = 'identity-v1';
+const DEPOSIT_KEY = 'deposits-v1';
 
 function showToast(msg){
   const t = document.getElementById('toast');
@@ -461,6 +523,10 @@ function loadAll(){
     const raw2 = localStorage.getItem(IDENTITY_KEY);
     identity = raw2 ? JSON.parse(raw2) : identity;
   }catch(e){}
+  try{
+    const raw3 = localStorage.getItem(DEPOSIT_KEY);
+    deposits = raw3 ? JSON.parse(raw3) : [];
+  }catch(e){ deposits = []; }
 
   document.getElementById('in-pair').value = identity.pair || '';
   document.getElementById('in-start').value = identity.start || '';
@@ -514,6 +580,58 @@ function fmtDate(d){
   if(isNaN(dt)) return d;
   const opts = {day:'2-digit', month:'short', year:'numeric'};
   return dt.toLocaleDateString('id-ID', opts);
+}
+
+function saveDeposits(){
+  try{
+    localStorage.setItem(DEPOSIT_KEY, JSON.stringify(deposits));
+  }catch(e){ showToast('Gagal menyimpan deposit'); }
+}
+
+function addDeposit(){
+  const date = document.getElementById('d-date').value;
+  const amountRaw = document.getElementById('d-amount').value;
+  const amount = parseFloat((amountRaw||'').replace(/[^0-9.-]/g,''));
+
+  if(!date || isNaN(amount) || amount <= 0){
+    showToast('Isi tanggal dan jumlah deposit dulu');
+    return;
+  }
+
+  deposits.push({ date, amount });
+  deposits.sort((a,b)=> new Date(a.date) - new Date(b.date));
+
+  document.getElementById('d-date').value = '';
+  document.getElementById('d-amount').value = '';
+
+  saveDeposits();
+  renderAll();
+  showToast('Deposit ditambahkan');
+}
+
+function removeDeposit(idx){
+  deposits.splice(idx,1);
+  saveDeposits();
+  renderAll();
+}
+
+function renderDeposits(){
+  const list = document.getElementById('depositList');
+  const countLabel = document.getElementById('depositCountLabel');
+  countLabel.textContent = `${deposits.length} deposit`;
+
+  if(deposits.length === 0){
+    list.innerHTML = `<div class="deposit-empty">Belum ada deposit tambahan.</div>`;
+    return;
+  }
+
+  list.innerHTML = deposits.map((d, idx)=>`
+    <div class="deposit-item">
+      <span>${fmtDate(d.date)}</span>
+      <span class="amt">+${fmtRupiahShort(d.amount)}</span>
+      <button class="btn-danger-text" onclick="removeDeposit(${idx})">Hapus</button>
+    </div>
+  `).join('');
 }
 
 function addTrade(){
@@ -598,8 +716,9 @@ function computeStats(){
   const profitRpGross = modal > 0 ? (modal * profitPercent / 100) : totalPips;
   const profitRp = profitRpGross - totalKomisi;
   const ddRp = modal > 0 ? (modal * ddPercent / 100) : 0;
+  const totalDeposit = deposits.reduce((s,d)=>s+(d.amount||0),0);
 
-  return { total, wins:wins.length, losses:losses.length, winRate, totalPips, profitFactor, best, worst, profitPercent, ddPercent, modal, profitRp, ddRp, totalKomisi };
+  return { total, wins:wins.length, losses:losses.length, winRate, totalPips, profitFactor, best, worst, profitPercent, ddPercent, modal, profitRp, ddRp, totalKomisi, totalDeposit };
 }
 
 function renderStats(s){
@@ -614,7 +733,10 @@ function renderStats(s){
   if(s.modal > 0){
     items.push({ label:'Profit (Rp)', value: fmtRupiahShort(s.profitRp), cls: s.profitRp>=0?'pos':'neg' });
     items.push({ label:'Total Komisi', value: fmtRupiahShort(s.totalKomisi), cls: 'neutral' });
-    items.push({ label:'Modal Akhir', value: fmtRupiahShort(s.modal + s.profitRp), cls:'neutral' });
+    if(s.totalDeposit > 0){
+      items.push({ label:'Total Deposit', value: '+'+fmtRupiahShort(s.totalDeposit), cls: 'pos' });
+    }
+    items.push({ label:'Modal Akhir', value: fmtRupiahShort(s.modal + s.profitRp + s.totalDeposit), cls:'neutral' });
   }
   grid.innerHTML = items.map(it=>`
     <div class="stat">
@@ -758,6 +880,7 @@ function renderAll(){
   const s = computeStats();
   renderStats(s);
   renderTable();
+  renderDeposits();
   renderConclusion(s);
 
   if(identity.start && identity.end){
@@ -765,7 +888,7 @@ function renderAll(){
     const days = Math.round((d2-d1)/(1000*60*60*24));
     setStatus(`<span class="mono">${days>=0?days:0} hari</span> &middot; ${trades.length} trade`);
   } else {
-    setStatus(`${trades.length} trade &middot; tersimpan lokal`);
+    setStatus(`${trades.length} trade &middot; tersimpan di browser ini`);
   }
 }
 
